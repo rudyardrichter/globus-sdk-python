@@ -1,160 +1,19 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-
-
-<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+<!DOCTYPE HTML>
+<html lang="en">
   <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    
-    <title>Globus SDK Configuration &mdash; globus-sdk-python 0.5.1 documentation</title>
-    
-    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    
+    <meta charset="utf-8"></meta>
+    <meta http-equiv="refresh" content="1;url=http://globus-sdk-python.rtfd.io/en/latest/config.html"></meta>
     <script type="text/javascript">
-      var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    './',
-        VERSION:     '0.5.1',
-        COLLAPSE_INDEX: false,
-        FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true
-      };
+    window.location.href = "http://globus-sdk-python.rtfd.io/en/latest/config.html"
     </script>
-    <script type="text/javascript" src="_static/jquery.js"></script>
-    <script type="text/javascript" src="_static/underscore.js"></script>
-    <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="globus-sdk-python 0.5.1 documentation" href="index.html" />
-    <link rel="next" title="Deprecations" href="deprecations.html" />
-    <link rel="prev" title="API Authorization" href="authorization.html" /> 
+    <title>Page Redirection</title>
   </head>
-  <body role="document">
-    <div class="related" role="navigation" aria-label="related navigation">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="genindex.html" title="General Index"
-             accesskey="I">index</a></li>
-        <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="right" >
-          <a href="deprecations.html" title="Deprecations"
-             accesskey="N">next</a> |</li>
-        <li class="right" >
-          <a href="authorization.html" title="API Authorization"
-             accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">globus-sdk-python 0.5.1 documentation</a> &raquo;</li> 
-      </ul>
-    </div>  
-
-    <div class="document">
-      <div class="documentwrapper">
-        <div class="bodywrapper">
-          <div class="body" role="main">
-            
-  <div class="section" id="globus-sdk-configuration">
-<h1>Globus SDK Configuration<a class="headerlink" href="#globus-sdk-configuration" title="Permalink to this headline">¶</a></h1>
-<p>There are three standard, canonical locations from which the Globus SDK will
-attempt to load configuration.</p>
-<p>There are two config file locations:</p>
-<div class="highlight-shell"><div class="highlight"><pre><span></span>/etc/globus.cfg <span class="c1"># system config, shared by all users</span>
-~/.globus.cfg <span class="c1"># personal config, specific to your user</span>
-</pre></div>
-</div>
-<p>additionally, the shell environment variables loaded into Python&#8217;s <cite>os.environ</cite>
-will be searched for configuration.</p>
-<p>The precedence rules are very simply</p>
-<ol class="arabic simple">
-<li>Environment</li>
-<li><code class="docutils literal"><span class="pre">~/.globus.cfg</span></code></li>
-<li><code class="docutils literal"><span class="pre">/etc/globus.cfg</span></code></li>
-</ol>
-<div class="section" id="config-format">
-<h2>Config Format<a class="headerlink" href="#config-format" title="Permalink to this headline">¶</a></h2>
-<p>Config files are INI formatted, so they take the general form</p>
-<div class="highlight-ini"><div class="highlight"><pre><span></span><span class="k">[SectionName]</span>
-<span class="na">key1</span> <span class="o">=</span> <span class="s">value1</span>
-<span class="na">key2</span> <span class="o">=</span> <span class="s">value2</span>
-</pre></div>
-</div>
-<p>At present, there are no configuration parameters which you should set in
-config files.</p>
-<p>The Globus CLI uses the <code class="docutils literal"><span class="pre">[cli]</span></code> section to store configuration information.</p>
-</div>
-<div class="section" id="environment-variables">
-<h2>Environment Variables<a class="headerlink" href="#environment-variables" title="Permalink to this headline">¶</a></h2>
-<p><code class="docutils literal"><span class="pre">GLOBUS_SDK_ENVIRONMENT</span></code> is a shell variable that can be used to point the
-SDK to an alternate set of Globus Servers.</p>
-<p>We currently have plans to create a beta environment that you can use with
-<code class="docutils literal"><span class="pre">GLOBUS_SDK_ENVIRONMENT=beta</span></code> to get a developer preview of upcoming
-features, but this is not available yet. For now, this variable should be left
-unset.</p>
-</div>
-</div>
-
-
-          </div>
-        </div>
-      </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper">
-  <h3><a href="index.html">Table Of Contents</a></h3>
-  <ul>
-<li><a class="reference internal" href="#">Globus SDK Configuration</a><ul>
-<li><a class="reference internal" href="#config-format">Config Format</a></li>
-<li><a class="reference internal" href="#environment-variables">Environment Variables</a></li>
-</ul>
-</li>
-</ul>
-
-  <h4>Previous topic</h4>
-  <p class="topless"><a href="authorization.html"
-                        title="previous chapter">API Authorization</a></p>
-  <h4>Next topic</h4>
-  <p class="topless"><a href="deprecations.html"
-                        title="next chapter">Deprecations</a></p>
-  <div role="note" aria-label="source link">
-    <h3>This Page</h3>
-    <ul class="this-page-menu">
-      <li><a href="_sources/config.txt"
-            rel="nofollow">Show Source</a></li>
-    </ul>
-   </div>
-<div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
-    <form class="search" action="search.html" method="get">
-      <input type="text" name="q" />
-      <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
-    </form>
-</div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
-        </div>
-      </div>
-      <div class="clearer"></div>
-    </div>
-    <div class="related" role="navigation" aria-label="related navigation">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="genindex.html" title="General Index"
-             >index</a></li>
-        <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="right" >
-          <a href="deprecations.html" title="Deprecations"
-             >next</a> |</li>
-        <li class="right" >
-          <a href="authorization.html" title="API Authorization"
-             >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">globus-sdk-python 0.5.1 documentation</a> &raquo;</li> 
-      </ul>
-    </div>
-    <div class="footer" role="contentinfo">
-        &copy; Copyright 2016, Globus.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.1.
-    </div>
+  <body>
+    <p>
+      Globus SDK Docs are No Longer Hosted Here
+    </p>
+    <p>
+      If you are not redirected automatically, follow the <a href='http://globus-sdk-python.rtfd.io/en/latest/config.html'>link to readthedocs</a>
+    </p>
   </body>
 </html>

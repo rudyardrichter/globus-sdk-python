@@ -1,143 +1,19 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-
-
-<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+<!DOCTYPE HTML>
+<html lang="en">
   <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    
-    <title>globus_sdk.auth.oauth_flow_manager &mdash; globus-sdk-python 0.5.1 documentation</title>
-    
-    <link rel="stylesheet" href="../../../_static/nature.css" type="text/css" />
-    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
-    
+    <meta charset="utf-8"></meta>
+    <meta http-equiv="refresh" content="1;url=http://globus-sdk-python.rtfd.io/en/latest/_modules/globus_sdk/auth/oauth_flow_manager.html"></meta>
     <script type="text/javascript">
-      var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    '../../../',
-        VERSION:     '0.5.1',
-        COLLAPSE_INDEX: false,
-        FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true
-      };
+    window.location.href = "http://globus-sdk-python.rtfd.io/en/latest/_modules/globus_sdk/auth/oauth_flow_manager.html"
     </script>
-    <script type="text/javascript" src="../../../_static/jquery.js"></script>
-    <script type="text/javascript" src="../../../_static/underscore.js"></script>
-    <script type="text/javascript" src="../../../_static/doctools.js"></script>
-    <link rel="top" title="globus-sdk-python 0.5.1 documentation" href="../../../index.html" />
-    <link rel="up" title="Module code" href="../../index.html" /> 
+    <title>Page Redirection</title>
   </head>
-  <body role="document">
-    <div class="related" role="navigation" aria-label="related navigation">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="../../../genindex.html" title="General Index"
-             accesskey="I">index</a></li>
-        <li class="right" >
-          <a href="../../../py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../../index.html">globus-sdk-python 0.5.1 documentation</a> &raquo;</li>
-          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
-      </ul>
-    </div>  
-
-    <div class="document">
-      <div class="documentwrapper">
-        <div class="bodywrapper">
-          <div class="body" role="main">
-            
-  <h1>Source code for globus_sdk.auth.oauth_flow_manager</h1><div class="highlight"><pre>
-<div class="viewcode-block" id="GlobusOAuthFlowManager"><a class="viewcode-back" href="../../../oauth/flows.html#globus_sdk.auth.oauth_flow_manager.GlobusOAuthFlowManager">[docs]</a><span></span><span class="k">class</span> <span class="nc">GlobusOAuthFlowManager</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    An abstract class definition that defines the interface for the Flow</span>
-<span class="sd">    Managers for Globus Auth.</span>
-<span class="sd">    Flow Managers are really just bundles of parameters to Globus Auth&#39;s OAuth2</span>
-<span class="sd">    mechanisms, along with some useful utility methods.</span>
-<span class="sd">    Primarily they can be used as a simple way of tracking small amounts of</span>
-<span class="sd">    state in your application as it leverages Globus Auth for authentication.</span>
-
-<span class="sd">    For sophisticated use cases, the provided Flow Managers will *NOT* be</span>
-<span class="sd">    sufficient, but you should consider the provided objects a model.</span>
-
-<span class="sd">    This way of managing OAuth2 flows is inspired by</span>
-<span class="sd">    `oauth2client &lt;https://github.com/google/oauth2client&gt;`_. However, because</span>
-<span class="sd">    ``oauth2client`` has an uncertain future (as of 2016-08-31), and we would</span>
-<span class="sd">    have to wrap it in order to provide a clean API surface anyway, we</span>
-<span class="sd">    implement our own set of Flow objects.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-<div class="viewcode-block" id="GlobusOAuthFlowManager.get_authorize_url"><a class="viewcode-back" href="../../../oauth/flows.html#globus_sdk.auth.oauth_flow_manager.GlobusOAuthFlowManager.get_authorize_url">[docs]</a>    <span class="k">def</span> <span class="nf">get_authorize_url</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        This method consumes no arguments or keyword arguments, and produces a</span>
-<span class="sd">        string URL for the Authorize Step of a 3-legged OAuth2 flow.</span>
-<span class="sd">        Most typically, this is the first step of the flow, and the user may be</span>
-<span class="sd">        redirected to the URL or provided with a link.</span>
-
-<span class="sd">        The authorize_url may be (usually is) parameterized over attributes of</span>
-<span class="sd">        the specific flow manager instance which is generating it.</span>
-
-<span class="sd">        :rtype: ``string``</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
-            <span class="s1">&#39;{0} does not implement get_authorize_url()&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)))</span></div>
-
-<div class="viewcode-block" id="GlobusOAuthFlowManager.exchange_code_for_tokens"><a class="viewcode-back" href="../../../oauth/flows.html#globus_sdk.auth.oauth_flow_manager.GlobusOAuthFlowManager.exchange_code_for_tokens">[docs]</a>    <span class="k">def</span> <span class="nf">exchange_code_for_tokens</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">auth_code</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        This method takes an auth_code and produces a response object</span>
-<span class="sd">        containing one or more tokens.</span>
-<span class="sd">        Most typically, this is the second step of the flow, and consumes the</span>
-<span class="sd">        auth_code that was sent to a redirect URI used in the authorize step.</span>
-
-<span class="sd">        The exchange process may be parameterized over attributes of the</span>
-<span class="sd">        specific flow manager instance which is generating it.</span>
-
-<span class="sd">        **Parameters**</span>
-
-<span class="sd">            ``auth_code`` (*string*)</span>
-<span class="sd">              The authorization code which was produced from the authorization</span>
-<span class="sd">              flow</span>
-
-<span class="sd">        :rtype: :class:`OAuthTokenResponse &lt;globus_sdk.OAuthTokenResponse&gt;`</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
-            <span class="s1">&#39;{0} does not implement exchange_code_for_tokens()&#39;</span>
-            <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)))</span></div></div>
-</pre></div>
-
-          </div>
-        </div>
-      </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper">
-<div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
-    <form class="search" action="../../../search.html" method="get">
-      <input type="text" name="q" />
-      <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
-    </form>
-</div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
-        </div>
-      </div>
-      <div class="clearer"></div>
-    </div>
-    <div class="related" role="navigation" aria-label="related navigation">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="../../../genindex.html" title="General Index"
-             >index</a></li>
-        <li class="right" >
-          <a href="../../../py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../../index.html">globus-sdk-python 0.5.1 documentation</a> &raquo;</li>
-          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &raquo;</li> 
-      </ul>
-    </div>
-    <div class="footer" role="contentinfo">
-        &copy; Copyright 2016, Globus.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.1.
-    </div>
+  <body>
+    <p>
+      Globus SDK Docs are No Longer Hosted Here
+    </p>
+    <p>
+      If you are not redirected automatically, follow the <a href='http://globus-sdk-python.rtfd.io/en/latest/_modules/globus_sdk/auth/oauth_flow_manager.html'>link to readthedocs</a>
+    </p>
   </body>
 </html>

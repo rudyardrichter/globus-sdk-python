@@ -1,170 +1,19 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-
-
-<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+<!DOCTYPE HTML>
+<html lang="en">
   <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    
-    <title>globus_sdk.auth.client_types.native_client &mdash; globus-sdk-python 0.5.1 documentation</title>
-    
-    <link rel="stylesheet" href="../../../../_static/nature.css" type="text/css" />
-    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
-    
+    <meta charset="utf-8"></meta>
+    <meta http-equiv="refresh" content="1;url=http://globus-sdk-python.rtfd.io/en/latest/_modules/globus_sdk/auth/client_types/native_client.html"></meta>
     <script type="text/javascript">
-      var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    '../../../../',
-        VERSION:     '0.5.1',
-        COLLAPSE_INDEX: false,
-        FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true
-      };
+    window.location.href = "http://globus-sdk-python.rtfd.io/en/latest/_modules/globus_sdk/auth/client_types/native_client.html"
     </script>
-    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
-    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
-    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
-    <link rel="top" title="globus-sdk-python 0.5.1 documentation" href="../../../../index.html" />
-    <link rel="up" title="Module code" href="../../../index.html" /> 
+    <title>Page Redirection</title>
   </head>
-  <body role="document">
-    <div class="related" role="navigation" aria-label="related navigation">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="../../../../genindex.html" title="General Index"
-             accesskey="I">index</a></li>
-        <li class="right" >
-          <a href="../../../../py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../../../index.html">globus-sdk-python 0.5.1 documentation</a> &raquo;</li>
-          <li class="nav-item nav-item-1"><a href="../../../index.html" accesskey="U">Module code</a> &raquo;</li> 
-      </ul>
-    </div>  
-
-    <div class="document">
-      <div class="documentwrapper">
-        <div class="bodywrapper">
-          <div class="body" role="main">
-            
-  <h1>Source code for globus_sdk.auth.client_types.native_client</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span> <span class="nn">logging</span>
-<span class="kn">from</span> <span class="nn">globus_sdk.authorizers</span> <span class="kn">import</span> <span class="n">NullAuthorizer</span>
-<span class="kn">from</span> <span class="nn">globus_sdk.auth.client_types.base</span> <span class="kn">import</span> <span class="n">AuthClient</span>
-<span class="kn">from</span> <span class="nn">globus_sdk.auth.oauth2_native_app</span> <span class="kn">import</span> <span class="n">GlobusNativeAppFlowManager</span>
-
-<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
-
-
-<div class="viewcode-block" id="NativeAppAuthClient"><a class="viewcode-back" href="../../../../clients/auth.html#globus_sdk.NativeAppAuthClient">[docs]</a><span class="k">class</span> <span class="nc">NativeAppAuthClient</span><span class="p">(</span><span class="n">AuthClient</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    This type of ``AuthClient`` is used to represent a Native App&#39;s</span>
-<span class="sd">    communications with Globus Auth.</span>
-<span class="sd">    It requires a Client ID, and cannot take an ``authorizer``.</span>
-
-<span class="sd">    Native Apps are applications, like the Globus CLI, which are run</span>
-<span class="sd">    client-side and therefore cannot keep secrets. Unable to possess client</span>
-<span class="sd">    credentials, several Globus Auth interactions have to be specialized to</span>
-<span class="sd">    accommodate the absence of a secret.</span>
-
-<span class="sd">    Any keyword arguments given are passed through to the ``AuthClient``</span>
-<span class="sd">    constructor.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="c1"># don&#39;t allow any authorizer to be used on a native app client</span>
-    <span class="c1"># it can&#39;t authorize it&#39;s calls, and shouldn&#39;t try to</span>
-    <span class="n">allowed_authorizer_types</span> <span class="o">=</span> <span class="p">[</span><span class="n">NullAuthorizer</span><span class="p">]</span>
-
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">client_id</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="k">if</span> <span class="s2">&quot;authorizer&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s1">&#39;ArgumentError(NativeAppClient.authorizer)&#39;</span><span class="p">)</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="s2">&quot;Cannot give a NativeAppAuthClient an authorizer&quot;</span><span class="p">)</span>
-
-        <span class="n">AuthClient</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
-            <span class="bp">self</span><span class="p">,</span> <span class="n">client_id</span><span class="o">=</span><span class="n">client_id</span><span class="p">,</span> <span class="n">authorizer</span><span class="o">=</span><span class="n">NullAuthorizer</span><span class="p">(),</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Finished initializing client, client_id={}&#39;</span>
-                         <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">client_id</span><span class="p">))</span>
-
-<div class="viewcode-block" id="NativeAppAuthClient.oauth2_start_flow_native_app"><a class="viewcode-back" href="../../../../clients/auth.html#globus_sdk.NativeAppAuthClient.oauth2_start_flow_native_app">[docs]</a>    <span class="k">def</span> <span class="nf">oauth2_start_flow_native_app</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Deprecated passthrough method for getting at ``self.oauth2_start_flow``</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">((</span><span class="s2">&quot;Using oauth2_start_flow_native_app() is &quot;</span>
-                          <span class="s2">&quot;deprecated. Recommend upgrade to &quot;</span>
-                          <span class="s2">&quot;oauth2_start_flow()&quot;</span><span class="p">))</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">oauth2_start_flow</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
-
-<div class="viewcode-block" id="NativeAppAuthClient.oauth2_start_flow"><a class="viewcode-back" href="../../../../clients/auth.html#globus_sdk.NativeAppAuthClient.oauth2_start_flow">[docs]</a>    <span class="k">def</span> <span class="nf">oauth2_start_flow</span><span class="p">(</span>
-            <span class="bp">self</span><span class="p">,</span> <span class="n">requested_scopes</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">redirect_uri</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
-            <span class="n">state</span><span class="o">=</span><span class="s1">&#39;_default&#39;</span><span class="p">,</span> <span class="n">verifier</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">refresh_tokens</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
-            <span class="n">prefill_named_grant</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Starts a Native App OAuth2 flow by instantiating a</span>
-<span class="sd">        :class:`GlobusNativeAppFlowManager</span>
-<span class="sd">        &lt;globus_sdk.auth.GlobusNativeAppFlowManager&gt;`</span>
-
-<span class="sd">        All of the parameters to this method are passed to that class&#39;s</span>
-<span class="sd">        initializer verbatim.</span>
-
-<span class="sd">        #notthreadsafe</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Starting Native App Grant Flow&#39;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">current_oauth2_flow_manager</span> <span class="o">=</span> <span class="n">GlobusNativeAppFlowManager</span><span class="p">(</span>
-            <span class="bp">self</span><span class="p">,</span> <span class="n">requested_scopes</span><span class="o">=</span><span class="n">requested_scopes</span><span class="p">,</span>
-            <span class="n">redirect_uri</span><span class="o">=</span><span class="n">redirect_uri</span><span class="p">,</span> <span class="n">state</span><span class="o">=</span><span class="n">state</span><span class="p">,</span> <span class="n">verifier</span><span class="o">=</span><span class="n">verifier</span><span class="p">,</span>
-            <span class="n">refresh_tokens</span><span class="o">=</span><span class="n">refresh_tokens</span><span class="p">,</span>
-            <span class="n">prefill_named_grant</span><span class="o">=</span><span class="n">prefill_named_grant</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_oauth2_flow_manager</span></div>
-
-<div class="viewcode-block" id="NativeAppAuthClient.oauth2_refresh_token"><a class="viewcode-back" href="../../../../clients/auth.html#globus_sdk.NativeAppAuthClient.oauth2_refresh_token">[docs]</a>    <span class="k">def</span> <span class="nf">oauth2_refresh_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">refresh_token</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        ``NativeAppAuthClient`` specializes the refresh token grant to include</span>
-<span class="sd">        its client ID as a parameter in the POST body.</span>
-<span class="sd">        It needs this specialization because it cannot authenticate the refresh</span>
-<span class="sd">        grant call with client credentials, as is normal.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Executing token refresh without client credentials&#39;</span><span class="p">)</span>
-        <span class="n">form_data</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;refresh_token&#39;</span><span class="p">:</span> <span class="n">refresh_token</span><span class="p">,</span>
-                     <span class="s1">&#39;grant_type&#39;</span><span class="p">:</span> <span class="s1">&#39;refresh_token&#39;</span><span class="p">,</span>
-                     <span class="s1">&#39;client_id&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">client_id</span><span class="p">}</span>
-
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">oauth2_token</span><span class="p">(</span><span class="n">form_data</span><span class="p">)</span></div></div>
-</pre></div>
-
-          </div>
-        </div>
-      </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper">
-<div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
-    <form class="search" action="../../../../search.html" method="get">
-      <input type="text" name="q" />
-      <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
-    </form>
-</div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
-        </div>
-      </div>
-      <div class="clearer"></div>
-    </div>
-    <div class="related" role="navigation" aria-label="related navigation">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="../../../../genindex.html" title="General Index"
-             >index</a></li>
-        <li class="right" >
-          <a href="../../../../py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../../../index.html">globus-sdk-python 0.5.1 documentation</a> &raquo;</li>
-          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &raquo;</li> 
-      </ul>
-    </div>
-    <div class="footer" role="contentinfo">
-        &copy; Copyright 2016, Globus.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.1.
-    </div>
+  <body>
+    <p>
+      Globus SDK Docs are No Longer Hosted Here
+    </p>
+    <p>
+      If you are not redirected automatically, follow the <a href='http://globus-sdk-python.rtfd.io/en/latest/_modules/globus_sdk/auth/client_types/native_client.html'>link to readthedocs</a>
+    </p>
   </body>
 </html>

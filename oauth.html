@@ -1,141 +1,19 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-
-
-<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+<!DOCTYPE HTML>
+<html lang="en">
   <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    
-    <title>Globus Auth / OAuth2 &mdash; globus-sdk-python 0.5.1 documentation</title>
-    
-    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    
+    <meta charset="utf-8"></meta>
+    <meta http-equiv="refresh" content="1;url=http://globus-sdk-python.rtfd.io/en/latest/oauth.html"></meta>
     <script type="text/javascript">
-      var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    './',
-        VERSION:     '0.5.1',
-        COLLAPSE_INDEX: false,
-        FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true
-      };
+    window.location.href = "http://globus-sdk-python.rtfd.io/en/latest/oauth.html"
     </script>
-    <script type="text/javascript" src="_static/jquery.js"></script>
-    <script type="text/javascript" src="_static/underscore.js"></script>
-    <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="globus-sdk-python 0.5.1 documentation" href="index.html" />
-    <link rel="next" title="OAuth Flows" href="oauth/flows.html" />
-    <link rel="prev" title="Exceptions" href="exceptions.html" /> 
+    <title>Page Redirection</title>
   </head>
-  <body role="document">
-    <div class="related" role="navigation" aria-label="related navigation">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="genindex.html" title="General Index"
-             accesskey="I">index</a></li>
-        <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="right" >
-          <a href="oauth/flows.html" title="OAuth Flows"
-             accesskey="N">next</a> |</li>
-        <li class="right" >
-          <a href="exceptions.html" title="Exceptions"
-             accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">globus-sdk-python 0.5.1 documentation</a> &raquo;</li> 
-      </ul>
-    </div>  
-
-    <div class="document">
-      <div class="documentwrapper">
-        <div class="bodywrapper">
-          <div class="body" role="main">
-            
-  <div class="section" id="globus-auth-oauth2">
-<h1>Globus Auth / OAuth2<a class="headerlink" href="#globus-auth-oauth2" title="Permalink to this headline">¶</a></h1>
-<p>Globus offers Authentication and Authorization services through an OAuth2
-service, Globus Auth.</p>
-<p>Globus Auth acts as an Authorization Server, and allows users to authenticate
-with, and link together, identities from a wide range of Identity Providers.</p>
-<p>Although the <a class="reference internal" href="clients/auth.html#globus_sdk.AuthClient" title="globus_sdk.AuthClient"><code class="xref py py-class docutils literal"><span class="pre">AuthClient</span></code></a> class documentation
-covers normal interactions with Globus Auth, the OAuth2 flows are significantly
-more complex.</p>
-<p>This section documents the supported types of authentication and how to carry
-them out, as well as providing some necessary background on various OAuth2
-elements.</p>
-<p class="rubric">Credentials are for Users and also for Applications</p>
-<p>It is very important that our goal in OAuth2 is not to get credentials for an
-application on its own, but rather for the application as a <em>client</em> to Globus
-which is acting <em>on behalf of a user</em>.</p>
-<p>Therefore, if you are writing an application called <strong>foo</strong>, and a user
-<strong>bar&#64;example.com</strong> is using <strong>foo</strong>, the credentials produced belong to the
-combination of <strong>foo</strong> and <strong>bar&#64;example.com</strong>.
-The resulting credentials represent the rights and permission for <strong>foo</strong> to
-perform actions for <strong>bar&#64;example.com</strong> on systems authenticated via Globus.</p>
-<p class="rubric">OAuth2 Documentation</p>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="oauth/flows.html">OAuth Flows</a></li>
-<li class="toctree-l1"><a class="reference internal" href="oauth/resource_servers.html">Resouce Servers and Scopes</a></li>
-</ul>
-</div>
-</div>
-
-
-          </div>
-        </div>
-      </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper">
-  <h4>Previous topic</h4>
-  <p class="topless"><a href="exceptions.html"
-                        title="previous chapter">Exceptions</a></p>
-  <h4>Next topic</h4>
-  <p class="topless"><a href="oauth/flows.html"
-                        title="next chapter">OAuth Flows</a></p>
-  <div role="note" aria-label="source link">
-    <h3>This Page</h3>
-    <ul class="this-page-menu">
-      <li><a href="_sources/oauth.txt"
-            rel="nofollow">Show Source</a></li>
-    </ul>
-   </div>
-<div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
-    <form class="search" action="search.html" method="get">
-      <input type="text" name="q" />
-      <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
-    </form>
-</div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
-        </div>
-      </div>
-      <div class="clearer"></div>
-    </div>
-    <div class="related" role="navigation" aria-label="related navigation">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="genindex.html" title="General Index"
-             >index</a></li>
-        <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="right" >
-          <a href="oauth/flows.html" title="OAuth Flows"
-             >next</a> |</li>
-        <li class="right" >
-          <a href="exceptions.html" title="Exceptions"
-             >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">globus-sdk-python 0.5.1 documentation</a> &raquo;</li> 
-      </ul>
-    </div>
-    <div class="footer" role="contentinfo">
-        &copy; Copyright 2016, Globus.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.1.
-    </div>
+  <body>
+    <p>
+      Globus SDK Docs are No Longer Hosted Here
+    </p>
+    <p>
+      If you are not redirected automatically, follow the <a href='http://globus-sdk-python.rtfd.io/en/latest/oauth.html'>link to readthedocs</a>
+    </p>
   </body>
 </html>

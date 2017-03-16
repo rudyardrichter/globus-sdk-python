@@ -1,170 +1,19 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-
-
-<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+<!DOCTYPE HTML>
+<html lang="en">
   <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    
-    <title>Resouce Servers and Scopes &mdash; globus-sdk-python 0.5.1 documentation</title>
-    
-    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
-    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    
+    <meta charset="utf-8"></meta>
+    <meta http-equiv="refresh" content="1;url=http://globus-sdk-python.rtfd.io/en/latest/oauth/resource_servers.html"></meta>
     <script type="text/javascript">
-      var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    '../',
-        VERSION:     '0.5.1',
-        COLLAPSE_INDEX: false,
-        FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true
-      };
+    window.location.href = "http://globus-sdk-python.rtfd.io/en/latest/oauth/resource_servers.html"
     </script>
-    <script type="text/javascript" src="../_static/jquery.js"></script>
-    <script type="text/javascript" src="../_static/underscore.js"></script>
-    <script type="text/javascript" src="../_static/doctools.js"></script>
-    <link rel="top" title="globus-sdk-python 0.5.1 documentation" href="../index.html" />
-    <link rel="up" title="Globus Auth / OAuth2" href="../oauth.html" />
-    <link rel="next" title="API Authorization" href="../authorization.html" />
-    <link rel="prev" title="OAuth Flows" href="flows.html" /> 
+    <title>Page Redirection</title>
   </head>
-  <body role="document">
-    <div class="related" role="navigation" aria-label="related navigation">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="../genindex.html" title="General Index"
-             accesskey="I">index</a></li>
-        <li class="right" >
-          <a href="../py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="right" >
-          <a href="../authorization.html" title="API Authorization"
-             accesskey="N">next</a> |</li>
-        <li class="right" >
-          <a href="flows.html" title="OAuth Flows"
-             accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">globus-sdk-python 0.5.1 documentation</a> &raquo;</li>
-          <li class="nav-item nav-item-1"><a href="../oauth.html" accesskey="U">Globus Auth / OAuth2</a> &raquo;</li> 
-      </ul>
-    </div>  
-
-    <div class="document">
-      <div class="documentwrapper">
-        <div class="bodywrapper">
-          <div class="body" role="main">
-            
-  <div class="section" id="resouce-servers-and-scopes">
-<h1>Resouce Servers and Scopes<a class="headerlink" href="#resouce-servers-and-scopes" title="Permalink to this headline">¶</a></h1>
-<p>What are Resource Servers, and how do they interact with scopes?</p>
-<p>If you look at a <a class="reference internal" href="../responses.html#globus_sdk.auth.token_response.OAuthTokenResponse" title="globus_sdk.auth.token_response.OAuthTokenResponse"><code class="xref py py-class docutils literal"><span class="pre">OAuthTokenResponse</span></code></a>, you will notice
-that it organizes information under Resource Servers, including one access
-token (and optionally one refresh token) per Resource Server.
-This can appear confusing, especially as the Resource Servers in this response
-do not map one-to-one onto the scopes that your application requested.</p>
-<p>This is a brief description Resource Servers to make sense of this response.</p>
-<div class="section" id="short-short-version">
-<h2>Short-Short Version<a class="headerlink" href="#short-short-version" title="Permalink to this headline">¶</a></h2>
-<p>Resource Servers are just the OAuth2 name for services which use scopes on
-tokens to control access to their resources.</p>
-</div>
-<div class="section" id="less-short-version">
-<h2>Less-Short Version<a class="headerlink" href="#less-short-version" title="Permalink to this headline">¶</a></h2>
-<p>When you request tokens, you do so with a set of scopes.
-Our default set consists of
-<code class="docutils literal"><span class="pre">openid</span> <span class="pre">profile</span> <span class="pre">email</span> <span class="pre">urn:globus:auth:scope:transfer.api.globus.org:all</span></code>.
-That means you can get OpenID Connect data in general, profile data, email
-address, and access to Globus Transfer resources (in that order).</p>
-<p>However, for those four scopes, there aren&#8217;t four distinct services &#8211; there
-are only two.
-<code class="docutils literal"><span class="pre">openid</span></code>, <code class="docutils literal"><span class="pre">profile</span></code>, and <code class="docutils literal"><span class="pre">email</span></code> all correspond to the service at
-<code class="docutils literal"><span class="pre">auth.globus.org</span></code> (Globus Auth) while
-<code class="docutils literal"><span class="pre">urn:globus:auth:scope:transfer.api.globus.org:all</span></code> corresponds to
-<code class="docutils literal"><span class="pre">transfer.api.globus.org</span></code> (Globus Transfer).</p>
-<p>As a result, we don&#8217;t get four tokens for our four scopes &#8211; we get two tokens,
-one for the first three scopes, and one for the last scope.
-Those tokens can be organized better by their relevant Resource Server than by
-their scope names, which is why we use the <code class="docutils literal"><span class="pre">token_response.by_resource_server</span></code>
-description.</p>
-</div>
-<div class="section" id="why-not-just-one-token">
-<h2>Why Not Just One Token?<a class="headerlink" href="#why-not-just-one-token" title="Permalink to this headline">¶</a></h2>
-<p>The reason for separate tokens at all (as opposed to one token with all four
-scopes) is to limit the exposure of tokens for different services.</p>
-<p>As a motivating example, consider a new service registered as Resource Server
-in Globus belonging to another organization &#8211; <code class="docutils literal"><span class="pre">serv.example.com</span></code>.
-<code class="docutils literal"><span class="pre">serv.example.com</span></code> should not see tokens scoped for Globus Transfer, and
-Globus Transfer shouldn&#8217;t see tokens scoped for <code class="docutils literal"><span class="pre">serv.example.com</span></code>.</p>
-<p>Using a single token for all Resource Servers would make isolating services in
-this way impossible.</p>
-</div>
-</div>
-
-
-          </div>
-        </div>
-      </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper">
-  <h3><a href="../index.html">Table Of Contents</a></h3>
-  <ul>
-<li><a class="reference internal" href="#">Resouce Servers and Scopes</a><ul>
-<li><a class="reference internal" href="#short-short-version">Short-Short Version</a></li>
-<li><a class="reference internal" href="#less-short-version">Less-Short Version</a></li>
-<li><a class="reference internal" href="#why-not-just-one-token">Why Not Just One Token?</a></li>
-</ul>
-</li>
-</ul>
-
-  <h4>Previous topic</h4>
-  <p class="topless"><a href="flows.html"
-                        title="previous chapter">OAuth Flows</a></p>
-  <h4>Next topic</h4>
-  <p class="topless"><a href="../authorization.html"
-                        title="next chapter">API Authorization</a></p>
-  <div role="note" aria-label="source link">
-    <h3>This Page</h3>
-    <ul class="this-page-menu">
-      <li><a href="../_sources/oauth/resource_servers.txt"
-            rel="nofollow">Show Source</a></li>
-    </ul>
-   </div>
-<div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
-    <form class="search" action="../search.html" method="get">
-      <input type="text" name="q" />
-      <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
-    </form>
-</div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
-        </div>
-      </div>
-      <div class="clearer"></div>
-    </div>
-    <div class="related" role="navigation" aria-label="related navigation">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="../genindex.html" title="General Index"
-             >index</a></li>
-        <li class="right" >
-          <a href="../py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="right" >
-          <a href="../authorization.html" title="API Authorization"
-             >next</a> |</li>
-        <li class="right" >
-          <a href="flows.html" title="OAuth Flows"
-             >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">globus-sdk-python 0.5.1 documentation</a> &raquo;</li>
-          <li class="nav-item nav-item-1"><a href="../oauth.html" >Globus Auth / OAuth2</a> &raquo;</li> 
-      </ul>
-    </div>
-    <div class="footer" role="contentinfo">
-        &copy; Copyright 2016, Globus.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.1.
-    </div>
+  <body>
+    <p>
+      Globus SDK Docs are No Longer Hosted Here
+    </p>
+    <p>
+      If you are not redirected automatically, follow the <a href='http://globus-sdk-python.rtfd.io/en/latest/oauth/resource_servers.html'>link to readthedocs</a>
+    </p>
   </body>
 </html>
