@@ -1,0 +1,214 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>globus_sdk.auth.oauth2_authorization_code &mdash; globus-sdk-python 0.5.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.5.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="globus-sdk-python 0.5.1 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">globus-sdk-python 0.5.1 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for globus_sdk.auth.oauth2_authorization_code</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span> <span class="nn">six.moves.urllib.parse</span> <span class="kn">import</span> <span class="n">urlencode</span>
+
+<span class="kn">from</span> <span class="nn">globus_sdk.base</span> <span class="kn">import</span> <span class="n">slash_join</span>
+<span class="kn">from</span> <span class="nn">globus_sdk.auth.oauth2_constants</span> <span class="kn">import</span> <span class="n">DEFAULT_REQUESTED_SCOPES</span>
+<span class="kn">from</span> <span class="nn">globus_sdk.auth.oauth_flow_manager</span> <span class="kn">import</span> <span class="n">GlobusOAuthFlowManager</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="GlobusAuthorizationCodeFlowManager"><a class="viewcode-back" href="../../../oauth/flows.html#globus_sdk.auth.GlobusAuthorizationCodeFlowManager">[docs]</a><span class="k">class</span> <span class="nc">GlobusAuthorizationCodeFlowManager</span><span class="p">(</span><span class="n">GlobusOAuthFlowManager</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This is the OAuth flow designated for use by Clients wishing to</span>
+<span class="sd">    authenticate users in a web application backed by a server-side component</span>
+<span class="sd">    (e.g. an API). The key constraint is that there is a server-side system</span>
+<span class="sd">    that can keep a Client Secret without exposing it to the web client.</span>
+<span class="sd">    For example, a Django application can rely on the webserver to own the</span>
+<span class="sd">    secret, so long as it doesn&#39;t embed it in any of the pages it generates.</span>
+
+<span class="sd">    The application sends the user to get a temporary credential (an</span>
+<span class="sd">    ``auth_code``) associated with its Client ID. It then exchanges that</span>
+<span class="sd">    temporary credential for a token, protecting the exchange with its Client</span>
+<span class="sd">    Secret (to prove that it really is the application that the user just</span>
+<span class="sd">    authorized).</span>
+
+<span class="sd">    **Parameters**</span>
+
+<span class="sd">        ``auth_client`` (*ConfidentialAppAuthClient*)</span>
+<span class="sd">          The ``AuthClient`` used to extract default values for the flow, and</span>
+<span class="sd">          also to make calls to the Auth service. It MUST be a</span>
+<span class="sd">          ``ConfidentialAppAuthClient``</span>
+
+<span class="sd">        ``redirect_uri`` (*string*)</span>
+<span class="sd">          The page that users should be directed to after authenticating at the</span>
+<span class="sd">          authorize URL. Required.</span>
+
+<span class="sd">        ``requested_scopes`` (*string*)</span>
+<span class="sd">          The scopes on the token(s) being requested, as a space-separated</span>
+<span class="sd">          string. Defaults to ``openid profile email</span>
+<span class="sd">          urn:globus:auth:scope:transfer.api.globus.org:all``</span>
+
+<span class="sd">        ``state`` (*string*)</span>
+<span class="sd">          This is a way of your application passing information back to itself</span>
+<span class="sd">          in the course of the OAuth flow. Because the user will navigate away</span>
+<span class="sd">          from your application to complete the flow, this parameter lets you</span>
+<span class="sd">          pass an arbitrary string from the starting page to the</span>
+<span class="sd">          ``redirect_uri``</span>
+
+<span class="sd">        ``refresh_tokens`` (*bool*)</span>
+<span class="sd">          When True, request refresh tokens in addition to access tokens</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">auth_client</span><span class="p">,</span> <span class="n">redirect_uri</span><span class="p">,</span>
+                 <span class="n">requested_scopes</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">state</span><span class="o">=</span><span class="s1">&#39;_default&#39;</span><span class="p">,</span>
+                 <span class="n">refresh_tokens</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="c1"># default to the default requested scopes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">requested_scopes</span> <span class="o">=</span> <span class="n">requested_scopes</span> <span class="ow">or</span> <span class="n">DEFAULT_REQUESTED_SCOPES</span>
+
+        <span class="c1"># store the remaining parameters directly, with no transformation</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">client_id</span> <span class="o">=</span> <span class="n">auth_client</span><span class="o">.</span><span class="n">client_id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">auth_client</span> <span class="o">=</span> <span class="n">auth_client</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">redirect_uri</span> <span class="o">=</span> <span class="n">redirect_uri</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">refresh_tokens</span> <span class="o">=</span> <span class="n">refresh_tokens</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="n">state</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Starting Authorization Code Flow with params:&#39;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;auth_client.client_id={}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">auth_client</span><span class="o">.</span><span class="n">client_id</span><span class="p">))</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;redirect_uri={}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">redirect_uri</span><span class="p">))</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;refresh_tokens={}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">refresh_tokens</span><span class="p">))</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;state={}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">state</span><span class="p">))</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;requested_scopes={}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">requested_scopes</span><span class="p">))</span>
+
+<div class="viewcode-block" id="GlobusAuthorizationCodeFlowManager.get_authorize_url"><a class="viewcode-back" href="../../../oauth/flows.html#globus_sdk.auth.GlobusAuthorizationCodeFlowManager.get_authorize_url">[docs]</a>    <span class="k">def</span> <span class="nf">get_authorize_url</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">additional_params</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Start a Authorization Code flow by getting the authorization URL to</span>
+<span class="sd">        which users should be sent.</span>
+
+<span class="sd">        **Parameters**</span>
+
+<span class="sd">            ``additional_params`` (*dict*)</span>
+<span class="sd">              A ``dict`` or ``None``, which specifies additional query</span>
+<span class="sd">              parameters to include in the authorize URL. Primarily for</span>
+<span class="sd">              internal use</span>
+
+<span class="sd">        :rtype: ``string``</span>
+
+<span class="sd">        The returned URL string is encoded to be suitable to display to users</span>
+<span class="sd">        in a link or to copy into their browser. Users will be redirected</span>
+<span class="sd">        either to your provided ``redirect_uri`` or to the default location,</span>
+<span class="sd">        with the ``auth_code`` embedded in a query parameter.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">authorize_base_url</span> <span class="o">=</span> <span class="n">slash_join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">auth_client</span><span class="o">.</span><span class="n">base_url</span><span class="p">,</span>
+                                        <span class="s1">&#39;/v2/oauth2/authorize&#39;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Building authorization URI. Base URL: {}&#39;</span>
+                     <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">authorize_base_url</span><span class="p">))</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;additional_params={}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">additional_params</span><span class="p">))</span>
+
+        <span class="n">params</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;client_id&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">client_id</span><span class="p">,</span>
+            <span class="s1">&#39;redirect_uri&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">redirect_uri</span><span class="p">,</span>
+            <span class="s1">&#39;scope&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">requested_scopes</span><span class="p">,</span>
+            <span class="s1">&#39;state&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">,</span>
+            <span class="s1">&#39;response_type&#39;</span><span class="p">:</span> <span class="s1">&#39;code&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;access_type&#39;</span><span class="p">:</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">refresh_tokens</span> <span class="ow">and</span> <span class="s1">&#39;offline&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="s1">&#39;online&#39;</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="n">additional_params</span><span class="p">:</span>
+            <span class="n">params</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">additional_params</span><span class="p">)</span>
+
+        <span class="n">params</span> <span class="o">=</span> <span class="n">urlencode</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+        <span class="k">return</span> <span class="s1">&#39;{0}?{1}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">authorize_base_url</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="GlobusAuthorizationCodeFlowManager.exchange_code_for_tokens"><a class="viewcode-back" href="../../../oauth/flows.html#globus_sdk.auth.GlobusAuthorizationCodeFlowManager.exchange_code_for_tokens">[docs]</a>    <span class="k">def</span> <span class="nf">exchange_code_for_tokens</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">auth_code</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The second step of the Authorization Code flow, exchange an</span>
+<span class="sd">        authorization code for access tokens (and refresh tokens if specified)</span>
+
+<span class="sd">        :rtype: :class:`OAuthTokenResponse \</span>
+<span class="sd">        &lt;globus_sdk.auth.token_response.OAuthTokenResponse&gt;`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">((</span><span class="s1">&#39;Performing Authorization Code auth_code exchange. &#39;</span>
+                      <span class="s1">&#39;Sending client_id and client_secret&#39;</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">auth_client</span><span class="o">.</span><span class="n">oauth2_token</span><span class="p">(</span>
+            <span class="p">{</span><span class="s1">&#39;grant_type&#39;</span><span class="p">:</span> <span class="s1">&#39;authorization_code&#39;</span><span class="p">,</span>
+             <span class="s1">&#39;code&#39;</span><span class="p">:</span> <span class="n">auth_code</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">),</span>
+             <span class="s1">&#39;redirect_uri&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">redirect_uri</span><span class="p">})</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">globus-sdk-python 0.5.1 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2016, Globus.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.1.
+    </div>
+  </body>
+</html>

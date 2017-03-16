@@ -1,0 +1,1546 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>globus_sdk.transfer.client &mdash; globus-sdk-python 0.5.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.5.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="globus-sdk-python 0.5.1 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">globus-sdk-python 0.5.1 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for globus_sdk.transfer.client</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="kn">from</span> <span class="nn">globus_sdk</span> <span class="kn">import</span> <span class="n">exc</span>
+<span class="kn">from</span> <span class="nn">globus_sdk.base</span> <span class="kn">import</span> <span class="n">BaseClient</span><span class="p">,</span> <span class="n">merge_params</span><span class="p">,</span> <span class="n">safe_stringify</span>
+<span class="kn">from</span> <span class="nn">globus_sdk.authorizers</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">AccessTokenAuthorizer</span><span class="p">,</span> <span class="n">RefreshTokenAuthorizer</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">globus_sdk.transfer.response</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">TransferResponse</span><span class="p">,</span> <span class="n">IterableTransferResponse</span><span class="p">,</span> <span class="n">ActivationRequirementsResponse</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">globus_sdk.transfer.paging</span> <span class="kn">import</span> <span class="n">PaginatedResource</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="TransferClient"><a class="viewcode-back" href="../../../clients/transfer.html#globus_sdk.TransferClient">[docs]</a><span class="k">class</span> <span class="nc">TransferClient</span><span class="p">(</span><span class="n">BaseClient</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Client for the</span>
+<span class="sd">    `Globus Transfer API &lt;https://docs.globus.org/api/transfer/&gt;`_.</span>
+
+<span class="sd">    This class provides helper methods for most common resources in the</span>
+<span class="sd">    REST API, and basic ``get``, ``put``, ``post``, and ``delete`` methods</span>
+<span class="sd">    from the base rest client that can be used to access any REST resource.</span>
+
+<span class="sd">    There are two types of helper methods: list methods which return an</span>
+<span class="sd">    iterator of :class:`GlobusResponse \</span>
+<span class="sd">    &lt;globus_sdk.response.GlobusResponse&gt;`</span>
+<span class="sd">    objects, and simple methods that return a single</span>
+<span class="sd">    :class:`TransferResponse &lt;globus_sdk.transfer.response.TransferResponse&gt;`</span>
+<span class="sd">    object.</span>
+
+<span class="sd">    Detailed documentation is available in the official REST API</span>
+<span class="sd">    documentation, which is linked to from the method documentation. Methods</span>
+<span class="sd">    that allow arbitrary keyword arguments will pass the extra arguments as</span>
+<span class="sd">    query parameters.</span>
+
+<span class="sd">    **Parameters**</span>
+
+<span class="sd">        ``authorizer`` (:class:`GlobusAuthorizer\</span>
+<span class="sd">        &lt;globus_sdk.authorizers.base.GlobusAuthorizer&gt;`)</span>
+
+<span class="sd">          An authorizer instance used for all calls to Globus Transfer</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># disallow basic auth</span>
+    <span class="n">allowed_authorizer_types</span> <span class="o">=</span> <span class="p">[</span><span class="n">AccessTokenAuthorizer</span><span class="p">,</span>
+                                <span class="n">RefreshTokenAuthorizer</span><span class="p">]</span>
+    <span class="n">error_class</span> <span class="o">=</span> <span class="n">exc</span><span class="o">.</span><span class="n">TransferAPIError</span>
+    <span class="n">default_response_class</span> <span class="o">=</span> <span class="n">TransferResponse</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">authorizer</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">BaseClient</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;transfer&quot;</span><span class="p">,</span> <span class="n">base_path</span><span class="o">=</span><span class="s2">&quot;/v0.10/&quot;</span><span class="p">,</span>
+                            <span class="n">authorizer</span><span class="o">=</span><span class="n">authorizer</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="c1"># Convenience methods, providing more pythonic access to common REST</span>
+    <span class="c1"># resources</span>
+
+    <span class="c1">#</span>
+    <span class="c1"># Endpoint Management</span>
+    <span class="c1">#</span>
+
+<div class="viewcode-block" id="TransferClient.get_endpoint"><a class="viewcode-back" href="../../../clients/transfer.html#globus_sdk.TransferClient.get_endpoint">[docs]</a>    <span class="k">def</span> <span class="nf">get_endpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ``GET /endpoint/&lt;endpoint_id&gt;``</span>
+
+<span class="sd">        :rtype: :class:`TransferResponse</span>
+<span class="sd">                &lt;globus_sdk.transfer.response.TransferResponse&gt;`</span>
+
+<span class="sd">        **Examples**</span>
+
+<span class="sd">        &gt;&gt;&gt; tc = globus_sdk.TransferClient(...)</span>
+<span class="sd">        &gt;&gt;&gt; endpoint = tc.get_endpoint(endpoint_id)</span>
+<span class="sd">        &gt;&gt;&gt; print(&quot;Endpoint name:&quot;,</span>
+<span class="sd">        &gt;&gt;&gt;       endpoint[&quot;display_name&quot;] or endpoint[&quot;canonical_name&quot;])</span>
+
+<span class="sd">        **External Documentation**</span>
+
+<span class="sd">        See</span>
+<span class="sd">        `Get Endpoint by ID \</span>
+<span class="sd">        &lt;https://docs.globus.org/api/transfer/endpoint/#get_endpoint_by_id&gt;`_</span>
+<span class="sd">        in the REST documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">endpoint_id</span> <span class="o">=</span> <span class="n">safe_stringify</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;TransferClient.get_endpoint({})&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">))</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qjoin_path</span><span class="p">(</span><span class="s2">&quot;endpoint&quot;</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TransferClient.update_endpoint"><a class="viewcode-back" href="../../../clients/transfer.html#globus_sdk.TransferClient.update_endpoint">[docs]</a>    <span class="k">def</span> <span class="nf">update_endpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ``PUT /endpoint/&lt;endpoint_id&gt;``</span>
+
+<span class="sd">        :rtype: :class:`TransferResponse</span>
+<span class="sd">                &lt;globus_sdk.transfer.response.TransferResponse&gt;`</span>
+
+<span class="sd">        **Examples**</span>
+
+<span class="sd">        &gt;&gt;&gt; tc = globus_sdk.TransferClient(...)</span>
+<span class="sd">        &gt;&gt;&gt; epup = dict(display_name=&quot;My New Endpoint Name&quot;,</span>
+<span class="sd">        &gt;&gt;&gt;             description=&quot;Better Description&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; update_result = tc.update_endpoint(endpoint_id, epup)</span>
+
+<span class="sd">        **External Documentation**</span>
+
+<span class="sd">        See</span>
+<span class="sd">        `Update Endpoint by ID \</span>
+<span class="sd">        &lt;https://docs.globus.org/api/transfer/endpoint/#update_endpoint_by_id&gt;`_</span>
+<span class="sd">        in the REST documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;myproxy_server&#39;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;oauth_server&#39;</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;an endpoint cannot be reconfigured to use &quot;</span>
+                                 <span class="s2">&quot;multiple identity providers for activation; &quot;</span>
+                                 <span class="s2">&quot;specify either MyProxy or OAuth, not both&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">data</span><span class="p">[</span><span class="s1">&#39;oauth_server&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">elif</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;oauth_server&#39;</span><span class="p">):</span>
+            <span class="n">data</span><span class="p">[</span><span class="s1">&#39;myproxy_server&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span>
+
+        <span class="n">endpoint_id</span> <span class="o">=</span> <span class="n">safe_stringify</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;TransferClient.update_endpoint({}, ...)&quot;</span>
+                         <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">))</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qjoin_path</span><span class="p">(</span><span class="s2">&quot;endpoint&quot;</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TransferClient.create_endpoint"><a class="viewcode-back" href="../../../clients/transfer.html#globus_sdk.TransferClient.create_endpoint">[docs]</a>    <span class="k">def</span> <span class="nf">create_endpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ``POST /endpoint/&lt;endpoint_id&gt;``</span>
+
+<span class="sd">        :rtype: :class:`TransferResponse</span>
+<span class="sd">                &lt;globus_sdk.transfer.response.TransferResponse&gt;`</span>
+
+<span class="sd">        **Examples**</span>
+
+<span class="sd">        &gt;&gt;&gt; tc = globus_sdk.TransferClient(...)</span>
+<span class="sd">        &gt;&gt;&gt; ep_data = {</span>
+<span class="sd">        &gt;&gt;&gt;   &quot;DATA_TYPE&quot;: &quot;endpoint&quot;,</span>
+<span class="sd">        &gt;&gt;&gt;   &quot;display_name&quot;: display_name,</span>
+<span class="sd">        &gt;&gt;&gt;   &quot;DATA&quot;: [</span>
+<span class="sd">        &gt;&gt;&gt;     {</span>
+<span class="sd">        &gt;&gt;&gt;       &quot;DATA_TYPE&quot;: &quot;server&quot;,</span>
+<span class="sd">        &gt;&gt;&gt;       &quot;hostname&quot;: &quot;gridftp.example.edu&quot;,</span>
+<span class="sd">        &gt;&gt;&gt;     },</span>
+<span class="sd">        &gt;&gt;&gt;   ],</span>
+<span class="sd">        &gt;&gt;&gt; }</span>
+<span class="sd">        &gt;&gt;&gt; create_result = tc.create_endpoint(ep_data)</span>
+<span class="sd">        &gt;&gt;&gt; endpoint_id = create_result[&quot;id&quot;]</span>
+
+<span class="sd">        **External Documentation**</span>
+
+<span class="sd">        See</span>
+<span class="sd">        `Create endpoint \</span>
+<span class="sd">        &lt;https://docs.globus.org/api/transfer/endpoint/#create_endpoint&gt;`_</span>
+<span class="sd">        in the REST documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;myproxy_server&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;oauth_server&#39;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;an endpoint cannot be created using multiple &quot;</span>
+                             <span class="s2">&quot;identity providers for activation; &quot;</span>
+                             <span class="s2">&quot;specify either MyProxy or OAuth, not both&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;TransferClient.create_endpoint(...)&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;endpoint&quot;</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TransferClient.delete_endpoint"><a class="viewcode-back" href="../../../clients/transfer.html#globus_sdk.TransferClient.delete_endpoint">[docs]</a>    <span class="k">def</span> <span class="nf">delete_endpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ``DELETE /endpoint/&lt;endpoint_id&gt;``</span>
+
+<span class="sd">        :rtype: :class:`TransferResponse</span>
+<span class="sd">                &lt;globus_sdk.transfer.response.TransferResponse&gt;`</span>
+
+<span class="sd">        **Examples**</span>
+
+<span class="sd">        &gt;&gt;&gt; tc = globus_sdk.TransferClient(...)</span>
+<span class="sd">        &gt;&gt;&gt; delete_result = tc.delete_endpoint(endpoint_id)</span>
+
+<span class="sd">        **External Documentation**</span>
+
+<span class="sd">        See</span>
+<span class="sd">        `Delete endpoint by id \</span>
+<span class="sd">        &lt;https://docs.globus.org/api/transfer/endpoint/#delete_endpoint_by_id&gt;`_</span>
+<span class="sd">        in the REST documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">endpoint_id</span> <span class="o">=</span> <span class="n">safe_stringify</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;TransferClient.delete_endpoint({})&quot;</span>
+                         <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">))</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qjoin_path</span><span class="p">(</span><span class="s2">&quot;endpoint&quot;</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">path</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TransferClient.endpoint_manager_monitored_endpoints"><a class="viewcode-back" href="../../../clients/transfer.html#globus_sdk.TransferClient.endpoint_manager_monitored_endpoints">[docs]</a>    <span class="k">def</span> <span class="nf">endpoint_manager_monitored_endpoints</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ``GET endpoint_manager/monitored_endpoints``</span>
+
+<span class="sd">        :rtype: iterable of :class:`GlobusResponse</span>
+<span class="sd">                &lt;globus_sdk.response.GlobusResponse&gt;`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="s2">&quot;TransferClient.endpoint_manager_monitored_endpoints({})&quot;</span>
+            <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">params</span><span class="p">))</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qjoin_path</span><span class="p">(</span><span class="s1">&#39;endpoint_manager&#39;</span><span class="p">,</span> <span class="s1">&#39;monitored_endpoints&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
+                        <span class="n">response_class</span><span class="o">=</span><span class="n">IterableTransferResponse</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TransferClient.endpoint_search"><a class="viewcode-back" href="../../../clients/transfer.html#globus_sdk.TransferClient.endpoint_search">[docs]</a>    <span class="k">def</span> <span class="nf">endpoint_search</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filter_fulltext</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">filter_scope</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                        <span class="n">num_results</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        .. parsed-literal::</span>
+
+<span class="sd">            GET /endpoint_search\</span>
+<span class="sd">            ?filter_fulltext=&lt;filter_fulltext&gt;&amp;filter_scope=&lt;filter_scope&gt;</span>
+
+<span class="sd">        :rtype: iterable of :class:`GlobusResponse</span>
+<span class="sd">                &lt;globus_sdk.response.GlobusResponse&gt;`</span>
+
+<span class="sd">        **Parameters**</span>
+
+<span class="sd">            ``filter_fulltext`` (*string*)</span>
+<span class="sd">              The string to use in a full text search on endpoints.</span>
+<span class="sd">              Effectively, the &quot;search query&quot; which is being requested.</span>
+
+<span class="sd">            ``filter_scope`` (*string*)</span>
+<span class="sd">              A &quot;scope&quot; within which to search for endpoints. This must be one</span>
+<span class="sd">              of the limited and known names known to the service, which can be</span>
+<span class="sd">              found documented in the **External Documentation** below.</span>
+
+<span class="sd">            ``num_results`` (*int* or *None*)</span>
+<span class="sd">              default ``25``</span>
+<span class="sd">              The number of search results to fetch from the service. May be</span>
+<span class="sd">              set to ``None`` to request the maximum allowable number of</span>
+<span class="sd">              results.</span>
+
+<span class="sd">            ``params``</span>
+<span class="sd">              Any additional parameters will be passed through as query params.</span>
+
+<span class="sd">        **Examples**</span>
+
+<span class="sd">        Search for a given string as a fulltext search:</span>
+
+<span class="sd">        &gt;&gt;&gt; tc = globus_sdk.TransferClient(...)</span>
+<span class="sd">        &gt;&gt;&gt; for ep in tc.endpoint_search(&#39;String to search for!&#39;):</span>
+<span class="sd">        &gt;&gt;&gt;     print(ep[&#39;display_name&#39;])</span>
+
+<span class="sd">        Search for a given string, but only on endpoints that you own:</span>
+
+<span class="sd">        &gt;&gt;&gt; for ep in tc.endpoint_search(&#39;foo&#39;, filter_scope=&#39;my-endpoints&#39;):</span>
+<span class="sd">        &gt;&gt;&gt;     print(&#39;{0} has ID {1}&#39;.format(ep[&#39;display_name&#39;], ep[&#39;id&#39;]))</span>
+
+<span class="sd">        Search results are capped at a number of elements equal to the</span>
+<span class="sd">        ``num_results`` parameter.</span>
+<span class="sd">        If you want more than the default, 25, elements, do like so:</span>
+
+<span class="sd">        &gt;&gt;&gt; for ep in tc.endpoint_search(&#39;String to search for!&#39;,</span>
+<span class="sd">        &gt;&gt;&gt;                             num_results=120):</span>
+<span class="sd">        &gt;&gt;&gt;     print(ep[&#39;display_name&#39;])</span>
+
+<span class="sd">        It is important to be aware that the Endpoint Search API limits</span>
+<span class="sd">        you to 1000 results for any search query.</span>
+<span class="sd">        You can request the maximum number of results either explicitly, with</span>
+<span class="sd">        ``num_results=1000``, or by stating that you want no limit by setting</span>
+<span class="sd">        it to ``None``:</span>
+
+<span class="sd">        &gt;&gt;&gt; for ep in tc.endpoint_search(&#39;String to search for!&#39;,</span>
+<span class="sd">        &gt;&gt;&gt;                             num_results=None):</span>
+<span class="sd">        &gt;&gt;&gt;     print(ep[&#39;display_name&#39;])</span>
+
+<span class="sd">        **External Documentation**</span>
+
+<span class="sd">        For additional information, see `Endpoint Search</span>
+<span class="sd">        &lt;https://docs.globus.org/api/transfer/endpoint_search&gt;`_.</span>
+<span class="sd">        in the REST documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">merge_params</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">filter_scope</span><span class="o">=</span><span class="n">filter_scope</span><span class="p">,</span>
+                     <span class="n">filter_fulltext</span><span class="o">=</span><span class="n">filter_fulltext</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="s2">&quot;TransferClient.endpoint_manager_monitored_endpoints({})&quot;</span>
+            <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">params</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">PaginatedResource</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">,</span> <span class="s2">&quot;endpoint_search&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="n">params</span><span class="p">},</span>
+            <span class="n">num_results</span><span class="o">=</span><span class="n">num_results</span><span class="p">,</span> <span class="n">max_results_per_call</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+            <span class="n">max_total_results</span><span class="o">=</span><span class="mi">1000</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TransferClient.endpoint_autoactivate"><a class="viewcode-back" href="../../../clients/transfer.html#globus_sdk.TransferClient.endpoint_autoactivate">[docs]</a>    <span class="k">def</span> <span class="nf">endpoint_autoactivate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ``POST /endpoint/&lt;endpoint_id&gt;/autoactivate``</span>
+
+<span class="sd">        :rtype: :class:`TransferResponse</span>
+<span class="sd">                &lt;globus_sdk.transfer.response.TransferResponse&gt;`</span>
+
+<span class="sd">        The following example will try to &quot;auto&quot; activate the endpoint</span>
+<span class="sd">        using a credential available from another endpoint or sign in by</span>
+<span class="sd">        the user with the same identity provider, but only if the</span>
+<span class="sd">        endpoint is not already activated or going to expire within an</span>
+<span class="sd">        hour (3600 seconds). If that fails, direct the user to the</span>
+<span class="sd">        globus website to perform activation:</span>
+
+<span class="sd">        **Examples**</span>
+
+<span class="sd">        &gt;&gt;&gt; tc = globus_sdk.TransferClient(...)</span>
+<span class="sd">        &gt;&gt;&gt; r = tc.endpoint_autoactivate(ep_id, if_expires_in=3600)</span>
+<span class="sd">        &gt;&gt;&gt; while (r[&quot;code&quot;] == &quot;AutoActivationFailed&quot;):</span>
+<span class="sd">        &gt;&gt;&gt;     print(&quot;Endpoint requires manual activation, please open &quot;</span>
+<span class="sd">        &gt;&gt;&gt;           &quot;the following URL in a browser to activate the &quot;</span>
+<span class="sd">        &gt;&gt;&gt;           &quot;endpoint:&quot;)</span>
+<span class="sd">        &gt;&gt;&gt;     print(&quot;https://www.globus.org/app/endpoints/%s/activate&quot;</span>
+<span class="sd">        &gt;&gt;&gt;           % ep_id)</span>
+<span class="sd">        &gt;&gt;&gt;     # For python 2.X, use raw_input() instead</span>
+<span class="sd">        &gt;&gt;&gt;     input(&quot;Press ENTER after activating the endpoint:&quot;)</span>
+<span class="sd">        &gt;&gt;&gt;     r = tc.endpoint_autoactivate(ep_id, if_expires_in=3600)</span>
+
+<span class="sd">        This is the recommended flow for most thick client applications,</span>
+<span class="sd">        because many endpoints require activation via OAuth MyProxy,</span>
+<span class="sd">        which must be done in a browser anyway. Web based clients can</span>
+<span class="sd">        link directly to the URL.</span>
+
+<span class="sd">        You also might want messaging or logging depending on why and how the</span>
+<span class="sd">        operation succeeded, in which case you&#39;ll need to look at the value of</span>
+<span class="sd">        the &quot;code&quot; field and either decide on your own messaging or use the</span>
+<span class="sd">        response&#39;s &quot;message&quot; field.</span>
+
+<span class="sd">        &gt;&gt;&gt; tc = globus_sdk.TransferClient(...)</span>
+<span class="sd">        &gt;&gt;&gt; r = tc.endpoint_autoactivate(ep_id, if_expires_in=3600)</span>
+<span class="sd">        &gt;&gt;&gt; if r[&#39;code&#39;] == &#39;AutoActivationFailed&#39;:</span>
+<span class="sd">        &gt;&gt;&gt;     print(&#39;Endpoint({}) Not Active! Error! Source message: {}&#39;</span>
+<span class="sd">        &gt;&gt;&gt;           .format(ep_id, r[&#39;message&#39;]))</span>
+<span class="sd">        &gt;&gt;&gt;     sys.exit(1)</span>
+<span class="sd">        &gt;&gt;&gt; elif r[&#39;code&#39;] == &#39;AutoActivated.CachedCredential&#39;:</span>
+<span class="sd">        &gt;&gt;&gt;     print(&#39;Endpoint({}) autoactivated using a cached credential.&#39;</span>
+<span class="sd">        &gt;&gt;&gt;           .format(ep_id))</span>
+<span class="sd">        &gt;&gt;&gt; elif r[&#39;code&#39;] == &#39;AutoActivated.GlobusOnlineCredential&#39;:</span>
+<span class="sd">        &gt;&gt;&gt;     print((&#39;Endpoint({}) autoactivated using a built-in Globus &#39;</span>
+<span class="sd">        &gt;&gt;&gt;            &#39;credential.&#39;).format(ep_id))</span>
+<span class="sd">        &gt;&gt;&gt; elif r[&#39;code&#39;] = &#39;AlreadyActivated&#39;:</span>
+<span class="sd">        &gt;&gt;&gt;     print(&#39;Endpoint({}) already active until at least {}&#39;</span>
+<span class="sd">        &gt;&gt;&gt;           .format(ep_id, 3600))</span>
+
+<span class="sd">        **External Documentation**</span>
+
+<span class="sd">        See</span>
+<span class="sd">        `Autoactivate endpoint \</span>
+<span class="sd">        &lt;https://docs.globus.org/api/transfer/endpoint_activation/#autoactivate_endpoint&gt;`_</span>
+<span class="sd">        in the REST documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">endpoint_id</span> <span class="o">=</span> <span class="n">safe_stringify</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;TransferClient.endpoint_autoactivate({})&quot;</span>
+                         <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">))</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qjoin_path</span><span class="p">(</span><span class="s2">&quot;endpoint&quot;</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">,</span> <span class="s2">&quot;autoactivate&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TransferClient.endpoint_deactivate"><a class="viewcode-back" href="../../../clients/transfer.html#globus_sdk.TransferClient.endpoint_deactivate">[docs]</a>    <span class="k">def</span> <span class="nf">endpoint_deactivate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ``POST /endpoint/&lt;endpoint_id&gt;/deactivate``</span>
+
+<span class="sd">        :rtype: :class:`TransferResponse</span>
+<span class="sd">                &lt;globus_sdk.transfer.response.TransferResponse&gt;`</span>
+
+<span class="sd">        **External Documentation**</span>
+
+<span class="sd">        See</span>
+<span class="sd">        `Deactive endpoint \</span>
+<span class="sd">        &lt;https://docs.globus.org/api/transfer/endpoint_activation/#deactivate_endpoint&gt;`_</span>
+<span class="sd">        in the REST documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">endpoint_id</span> <span class="o">=</span> <span class="n">safe_stringify</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;TransferClient.endpoint_deactivate({})&quot;</span>
+                         <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">))</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qjoin_path</span><span class="p">(</span><span class="s2">&quot;endpoint&quot;</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">,</span> <span class="s2">&quot;deactivate&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TransferClient.endpoint_activate"><a class="viewcode-back" href="../../../clients/transfer.html#globus_sdk.TransferClient.endpoint_activate">[docs]</a>    <span class="k">def</span> <span class="nf">endpoint_activate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">,</span> <span class="n">requirements_data</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ``POST /endpoint/&lt;endpoint_id&gt;/activate``</span>
+
+<span class="sd">        :rtype: :class:`TransferResponse</span>
+<span class="sd">                &lt;globus_sdk.transfer.response.TransferResponse&gt;`</span>
+
+<span class="sd">        Consider using autoactivate and web activation instead, described</span>
+<span class="sd">        in the example for</span>
+<span class="sd">        :meth:`~globus_sdk.TransferClient.endpoint_autoactivate`.</span>
+
+<span class="sd">        **External Documentation**</span>
+
+<span class="sd">        See</span>
+<span class="sd">        `Activate endpoint \</span>
+<span class="sd">        &lt;https://docs.globus.org/api/transfer/endpoint_activation/#activate_endpoint&gt;`_</span>
+<span class="sd">        in the REST documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">endpoint_id</span> <span class="o">=</span> <span class="n">safe_stringify</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;TransferClient.endpoint_activate({})&quot;</span>
+                         <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">))</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qjoin_path</span><span class="p">(</span><span class="s2">&quot;endpoint&quot;</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">,</span> <span class="s2">&quot;activate&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">json_body</span><span class="o">=</span><span class="n">requirements_data</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TransferClient.endpoint_get_activation_requirements"><a class="viewcode-back" href="../../../clients/transfer.html#globus_sdk.TransferClient.endpoint_get_activation_requirements">[docs]</a>    <span class="k">def</span> <span class="nf">endpoint_get_activation_requirements</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ``GET /endpoint/&lt;endpoint_id&gt;/activation_requirements``</span>
+
+<span class="sd">        :rtype: :class:`ActivationRequirementsResponse</span>
+<span class="sd">                &lt;globus_sdk.transfer.response.ActivationRequirementsResponse&gt;`</span>
+
+<span class="sd">        **External Documentation**</span>
+
+<span class="sd">        See</span>
+<span class="sd">        `Get activation requirements \</span>
+<span class="sd">        &lt;https://docs.globus.org/api/transfer/endpoint_activation/#get_activation_requirements&gt;`_</span>
+<span class="sd">        in the REST documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">endpoint_id</span> <span class="o">=</span> <span class="n">safe_stringify</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">)</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qjoin_path</span><span class="p">(</span><span class="s2">&quot;endpoint&quot;</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">,</span>
+                               <span class="s2">&quot;activation_requirements&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
+                        <span class="n">response_class</span><span class="o">=</span><span class="n">ActivationRequirementsResponse</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TransferClient.my_effective_pause_rule_list"><a class="viewcode-back" href="../../../clients/transfer.html#globus_sdk.TransferClient.my_effective_pause_rule_list">[docs]</a>    <span class="k">def</span> <span class="nf">my_effective_pause_rule_list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ``GET /endpoint/&lt;endpoint_id&gt;/my_effective_pause_rule_list``</span>
+
+<span class="sd">        :rtype: :class:`IterableTransferResponse</span>
+<span class="sd">                &lt;globus_sdk.transfer.response.IterableTransferResponse&gt;`</span>
+
+<span class="sd">        **External Documentation**</span>
+
+<span class="sd">        See</span>
+<span class="sd">        `Get my effective endpoint pause rules \</span>
+<span class="sd">        &lt;https://docs.globus.org/api/transfer/endpoint/#get_endpoint_pause_rules&gt;`_</span>
+<span class="sd">        in the REST documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">endpoint_id</span> <span class="o">=</span> <span class="n">safe_stringify</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;TransferClient.my_effective_pause_rule_list({}, ...)&quot;</span>
+                         <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">))</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qjoin_path</span><span class="p">(</span><span class="s1">&#39;endpoint&#39;</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">,</span>
+                               <span class="s1">&#39;my_effective_pause_rule_list&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
+                        <span class="n">response_class</span><span class="o">=</span><span class="n">IterableTransferResponse</span><span class="p">)</span></div>
+
+    <span class="c1"># Shared Endpoints</span>
+
+<div class="viewcode-block" id="TransferClient.my_shared_endpoint_list"><a class="viewcode-back" href="../../../clients/transfer.html#globus_sdk.TransferClient.my_shared_endpoint_list">[docs]</a>    <span class="k">def</span> <span class="nf">my_shared_endpoint_list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ``GET /endpoint/&lt;endpoint_id&gt;/my_shared_endpoint_list``</span>
+
+<span class="sd">        :rtype: :class:`IterableTransferResponse</span>
+<span class="sd">                &lt;globus_sdk.transfer.response.IterableTransferResponse&gt;`</span>
+
+<span class="sd">        **External Documentation**</span>
+
+<span class="sd">        See</span>
+<span class="sd">        `Get shared endpoint list \</span>
+<span class="sd">        &lt;https://docs.globus.org/api/transfer/endpoint/#get_shared_endpoint_list&gt;`_</span>
+<span class="sd">        in the REST documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">endpoint_id</span> <span class="o">=</span> <span class="n">safe_stringify</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;TransferClient.my_shared_endpoint_list({}, ...)&quot;</span>
+                         <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">))</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qjoin_path</span><span class="p">(</span><span class="s1">&#39;endpoint&#39;</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">,</span>
+                               <span class="s1">&#39;my_shared_endpoint_list&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
+                        <span class="n">response_class</span><span class="o">=</span><span class="n">IterableTransferResponse</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TransferClient.create_shared_endpoint"><a class="viewcode-back" href="../../../clients/transfer.html#globus_sdk.TransferClient.create_shared_endpoint">[docs]</a>    <span class="k">def</span> <span class="nf">create_shared_endpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ``POST /shared_endpoint``</span>
+
+<span class="sd">        **Parameters**</span>
+
+<span class="sd">            ``data`` (*dict*)</span>
+<span class="sd">              A python dict representation of a ``shared_endpoint`` document</span>
+
+<span class="sd">        :rtype: :class:`TransferResponse</span>
+<span class="sd">                &lt;globus_sdk.transfer.response.TransferResponse&gt;`</span>
+
+<span class="sd">        **Examples**</span>
+
+<span class="sd">        &gt;&gt;&gt; tc = globus_sdk.TransferClient(...)</span>
+<span class="sd">        &gt;&gt;&gt; shared_ep_data = {</span>
+<span class="sd">        &gt;&gt;&gt;   &quot;DATA_TYPE&quot;: &quot;shared_endpoint&quot;,</span>
+<span class="sd">        &gt;&gt;&gt;   &quot;host_endpoint&quot;: host_endpoint_id,</span>
+<span class="sd">        &gt;&gt;&gt;   &quot;host_path&quot;: host_path,</span>
+<span class="sd">        &gt;&gt;&gt;   &quot;display_name&quot;: display_name,</span>
+<span class="sd">        &gt;&gt;&gt;   # optionally specify additional endpoint fields</span>
+<span class="sd">        &gt;&gt;&gt;   &quot;description&quot;: &quot;my test share&quot;</span>
+<span class="sd">        &gt;&gt;&gt; }</span>
+<span class="sd">        &gt;&gt;&gt; create_result = tc.create_shared_endpoint(shared_ep_data)</span>
+<span class="sd">        &gt;&gt;&gt; endpoint_id = create_result[&quot;id&quot;]</span>
+
+<span class="sd">        **External Documentation**</span>
+
+<span class="sd">        See</span>
+<span class="sd">        `Create shared endpoint \</span>
+<span class="sd">        &lt;https://docs.globus.org/api/transfer/endpoint/#create_shared_endpoint&gt;`_</span>
+<span class="sd">        in the REST documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;TransferClient.create_shared_endpoint(...)&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s1">&#39;shared_endpoint&#39;</span><span class="p">,</span> <span class="n">json_body</span><span class="o">=</span><span class="n">data</span><span class="p">)</span></div>
+
+    <span class="c1"># Endpoint servers</span>
+
+<div class="viewcode-block" id="TransferClient.endpoint_server_list"><a class="viewcode-back" href="../../../clients/transfer.html#globus_sdk.TransferClient.endpoint_server_list">[docs]</a>    <span class="k">def</span> <span class="nf">endpoint_server_list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ``GET /endpoint/&lt;endpoint_id&gt;/server_list``</span>
+
+<span class="sd">        :rtype: :class:`IterableTransferResponse</span>
+<span class="sd">                &lt;globus_sdk.transfer.response.IterableTransferResponse&gt;`</span>
+
+<span class="sd">        **External Documentation**</span>
+
+<span class="sd">        See</span>
+<span class="sd">        `Get endpoint server list \</span>
+<span class="sd">        &lt;https://docs.globus.org/api/transfer/endpoint/#get_endpoint_server_list&gt;`_</span>
+<span class="sd">        in the REST documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">endpoint_id</span> <span class="o">=</span> <span class="n">safe_stringify</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;TransferClient.endpoint_server_list({}, ...)&quot;</span>
+                         <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">))</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qjoin_path</span><span class="p">(</span><span class="s1">&#39;endpoint&#39;</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">,</span> <span class="s1">&#39;server_list&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
+                        <span class="n">response_class</span><span class="o">=</span><span class="n">IterableTransferResponse</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TransferClient.get_endpoint_server"><a class="viewcode-back" href="../../../clients/transfer.html#globus_sdk.TransferClient.get_endpoint_server">[docs]</a>    <span class="k">def</span> <span class="nf">get_endpoint_server</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">,</span> <span class="n">server_id</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ``GET /endpoint/&lt;endpoint_id&gt;/server/&lt;server_id&gt;``</span>
+
+<span class="sd">        :rtype: :class:`TransferResponse</span>
+<span class="sd">                &lt;globus_sdk.transfer.response.TransferResponse&gt;`</span>
+
+<span class="sd">        **External Documentation**</span>
+
+<span class="sd">        See</span>
+<span class="sd">        `Get endpoint server list \</span>
+<span class="sd">        &lt;https://docs.globus.org/api/transfer/endpoint/#get_endpoint_server_by_id&gt;`_</span>
+<span class="sd">        in the REST documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">endpoint_id</span> <span class="o">=</span> <span class="n">safe_stringify</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;TransferClient.get_endpoint_server({}, {}, ...)&quot;</span>
+                         <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">,</span> <span class="n">server_id</span><span class="p">))</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qjoin_path</span><span class="p">(</span><span class="s2">&quot;endpoint&quot;</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">,</span>
+                               <span class="s2">&quot;server&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">server_id</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TransferClient.add_endpoint_server"><a class="viewcode-back" href="../../../clients/transfer.html#globus_sdk.TransferClient.add_endpoint_server">[docs]</a>    <span class="k">def</span> <span class="nf">add_endpoint_server</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">,</span> <span class="n">server_data</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ``POST /endpoint/&lt;endpoint_id&gt;/server``</span>
+
+<span class="sd">        :rtype: :class:`TransferResponse</span>
+<span class="sd">                &lt;globus_sdk.transfer.response.TransferResponse&gt;`</span>
+
+<span class="sd">        **External Documentation**</span>
+
+<span class="sd">        See</span>
+<span class="sd">        `Add endpoint server \</span>
+<span class="sd">        &lt;https://docs.globus.org/api/transfer/endpoint/#add_endpoint_server&gt;`_</span>
+<span class="sd">        in the REST documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">endpoint_id</span> <span class="o">=</span> <span class="n">safe_stringify</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;TransferClient.add_endpoint_server({}, ...)&quot;</span>
+                         <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">))</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qjoin_path</span><span class="p">(</span><span class="s2">&quot;endpoint&quot;</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">,</span> <span class="s2">&quot;server&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">server_data</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TransferClient.update_endpoint_server"><a class="viewcode-back" href="../../../clients/transfer.html#globus_sdk.TransferClient.update_endpoint_server">[docs]</a>    <span class="k">def</span> <span class="nf">update_endpoint_server</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">,</span> <span class="n">server_id</span><span class="p">,</span> <span class="n">server_data</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ``PUT /endpoint/&lt;endpoint_id&gt;/server/&lt;server_id&gt;``</span>
+
+<span class="sd">        :rtype: :class:`TransferResponse</span>
+<span class="sd">                &lt;globus_sdk.transfer.response.TransferResponse&gt;`</span>
+
+<span class="sd">        **External Documentation**</span>
+
+<span class="sd">        See</span>
+<span class="sd">        `Update endpoint server by id \</span>
+<span class="sd">        &lt;https://docs.globus.org/api/transfer/endpoint/#update_endpoint_server_by_id&gt;`_</span>
+<span class="sd">        in the REST documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">endpoint_id</span> <span class="o">=</span> <span class="n">safe_stringify</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;TransferClient.update_endpoint_server({}, {}, ...)&quot;</span>
+                         <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">,</span> <span class="n">server_id</span><span class="p">))</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qjoin_path</span><span class="p">(</span><span class="s2">&quot;endpoint&quot;</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">,</span>
+                               <span class="s2">&quot;server&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">server_id</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">server_data</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TransferClient.delete_endpoint_server"><a class="viewcode-back" href="../../../clients/transfer.html#globus_sdk.TransferClient.delete_endpoint_server">[docs]</a>    <span class="k">def</span> <span class="nf">delete_endpoint_server</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">,</span> <span class="n">server_id</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ``DELETE /endpoint/&lt;endpoint_id&gt;/server/&lt;server_id&gt;``</span>
+
+<span class="sd">        :rtype: :class:`TransferResponse</span>
+<span class="sd">                &lt;globus_sdk.transfer.response.TransferResponse&gt;`</span>
+
+<span class="sd">        **External Documentation**</span>
+
+<span class="sd">        See</span>
+<span class="sd">        `Delete endpoint server by id \</span>
+<span class="sd">        &lt;https://docs.globus.org/api/transfer/endpoint/#delete_endpoint_server_by_id&gt;`_</span>
+<span class="sd">        in the REST documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">endpoint_id</span> <span class="o">=</span> <span class="n">safe_stringify</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;TransferClient.delete_endpoint_server({}, {})&quot;</span>
+                         <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">,</span> <span class="n">server_id</span><span class="p">))</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qjoin_path</span><span class="p">(</span><span class="s2">&quot;endpoint&quot;</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">,</span>
+                               <span class="s2">&quot;server&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">server_id</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">path</span><span class="p">)</span></div>
+
+    <span class="c1">#</span>
+    <span class="c1"># Roles</span>
+    <span class="c1">#</span>
+
+<div class="viewcode-block" id="TransferClient.endpoint_role_list"><a class="viewcode-back" href="../../../clients/transfer.html#globus_sdk.TransferClient.endpoint_role_list">[docs]</a>    <span class="k">def</span> <span class="nf">endpoint_role_list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ``GET /endpoint/&lt;endpoint_id&gt;/role_list``</span>
+
+<span class="sd">        :rtype: :class:`IterableTransferResponse</span>
+<span class="sd">                &lt;globus_sdk.transfer.response.IterableTransferResponse&gt;`</span>
+
+<span class="sd">        **External Documentation**</span>
+
+<span class="sd">        See</span>
+<span class="sd">        `Get list of endpoint roles \</span>
+<span class="sd">        &lt;https://docs.globus.org/api/transfer/endpoint_roles/#role_list&gt;`_</span>
+<span class="sd">        in the REST documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">endpoint_id</span> <span class="o">=</span> <span class="n">safe_stringify</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;TransferClient.endpoint_role_list({}, ...)&quot;</span>
+                         <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">))</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qjoin_path</span><span class="p">(</span><span class="s1">&#39;endpoint&#39;</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">,</span> <span class="s1">&#39;role_list&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
+                        <span class="n">response_class</span><span class="o">=</span><span class="n">IterableTransferResponse</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TransferClient.add_endpoint_role"><a class="viewcode-back" href="../../../clients/transfer.html#globus_sdk.TransferClient.add_endpoint_role">[docs]</a>    <span class="k">def</span> <span class="nf">add_endpoint_role</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">,</span> <span class="n">role_data</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ``POST /endpoint/&lt;endpoint_id&gt;/role``</span>
+
+<span class="sd">        :rtype: :class:`TransferResponse</span>
+<span class="sd">                &lt;globus_sdk.transfer.response.TransferResponse&gt;`</span>
+
+<span class="sd">        **External Documentation**</span>
+
+<span class="sd">        See</span>
+<span class="sd">        `Create endpoint role \</span>
+<span class="sd">        &lt;https://docs.globus.org/api/transfer/endpoint_roles/#create_role&gt;`_</span>
+<span class="sd">        in the REST documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">endpoint_id</span> <span class="o">=</span> <span class="n">safe_stringify</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;TransferClient.add_endpoint_role({}, ...)&quot;</span>
+                         <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">))</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qjoin_path</span><span class="p">(</span><span class="s1">&#39;endpoint&#39;</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">,</span> <span class="s1">&#39;role&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">role_data</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TransferClient.get_endpoint_role"><a class="viewcode-back" href="../../../clients/transfer.html#globus_sdk.TransferClient.get_endpoint_role">[docs]</a>    <span class="k">def</span> <span class="nf">get_endpoint_role</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">,</span> <span class="n">role_id</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ``GET /endpoint/&lt;endpoint_id&gt;/role/&lt;role_id&gt;``</span>
+
+<span class="sd">        :rtype: :class:`TransferResponse</span>
+<span class="sd">                &lt;globus_sdk.transfer.response.TransferResponse&gt;`</span>
+
+<span class="sd">        **External Documentation**</span>
+
+<span class="sd">        See</span>
+<span class="sd">        `Get endpoint role by id \</span>
+<span class="sd">        &lt;https://docs.globus.org/api/transfer/endpoint_roles/#get_endpoint_role_by_id&gt;`_</span>
+<span class="sd">        in the REST documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">endpoint_id</span> <span class="o">=</span> <span class="n">safe_stringify</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;TransferClient.get_endpoint_role({}, {}, ...)&quot;</span>
+                         <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">,</span> <span class="n">role_id</span><span class="p">))</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qjoin_path</span><span class="p">(</span><span class="s1">&#39;endpoint&#39;</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">,</span> <span class="s1">&#39;role&#39;</span><span class="p">,</span> <span class="n">role_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TransferClient.delete_endpoint_role"><a class="viewcode-back" href="../../../clients/transfer.html#globus_sdk.TransferClient.delete_endpoint_role">[docs]</a>    <span class="k">def</span> <span class="nf">delete_endpoint_role</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">,</span> <span class="n">role_id</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ``DELETE /endpoint/&lt;endpoint_id&gt;/role/&lt;role_id&gt;``</span>
+
+<span class="sd">        :rtype: :class:`TransferResponse</span>
+<span class="sd">                &lt;globus_sdk.transfer.response.TransferResponse&gt;`</span>
+
+<span class="sd">        **External Documentation**</span>
+
+<span class="sd">        See</span>
+<span class="sd">        `Delete endpoint role by id \</span>
+<span class="sd">        &lt;https://docs.globus.org/api/transfer/endpoint_roles/#delete_endpoint_role_by_id&gt;`_</span>
+<span class="sd">        in the REST documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">endpoint_id</span> <span class="o">=</span> <span class="n">safe_stringify</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;TransferClient.delete_endpoint_role({}, {})&quot;</span>
+                         <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">,</span> <span class="n">role_id</span><span class="p">))</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qjoin_path</span><span class="p">(</span><span class="s1">&#39;endpoint&#39;</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">,</span> <span class="s1">&#39;role&#39;</span><span class="p">,</span> <span class="n">role_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">path</span><span class="p">)</span></div>
+
+    <span class="c1">#</span>
+    <span class="c1"># ACLs</span>
+    <span class="c1">#</span>
+
+<div class="viewcode-block" id="TransferClient.endpoint_acl_list"><a class="viewcode-back" href="../../../clients/transfer.html#globus_sdk.TransferClient.endpoint_acl_list">[docs]</a>    <span class="k">def</span> <span class="nf">endpoint_acl_list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ``GET /endpoint/&lt;endpoint_id&gt;/access_list``</span>
+
+<span class="sd">        :rtype: :class:`IterableTransferResponse</span>
+<span class="sd">                &lt;globus_sdk.transfer.response.IterableTransferResponse&gt;`</span>
+
+<span class="sd">        **External Documentation**</span>
+
+<span class="sd">        See</span>
+<span class="sd">        `Get list of access rules \</span>
+<span class="sd">        &lt;https://docs.globus.org/api/transfer/acl/#rest_access_get_list&gt;`_</span>
+<span class="sd">        in the REST documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">endpoint_id</span> <span class="o">=</span> <span class="n">safe_stringify</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;TransferClient.endpoint_acl_list({}, ...)&quot;</span>
+                         <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">))</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qjoin_path</span><span class="p">(</span><span class="s1">&#39;endpoint&#39;</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">,</span> <span class="s1">&#39;access_list&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
+                        <span class="n">response_class</span><span class="o">=</span><span class="n">IterableTransferResponse</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TransferClient.get_endpoint_acl_rule"><a class="viewcode-back" href="../../../clients/transfer.html#globus_sdk.TransferClient.get_endpoint_acl_rule">[docs]</a>    <span class="k">def</span> <span class="nf">get_endpoint_acl_rule</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">,</span> <span class="n">rule_id</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ``GET /endpoint/&lt;endpoint_id&gt;/access/&lt;rule_id&gt;``</span>
+
+<span class="sd">        :rtype: :class:`TransferResponse</span>
+<span class="sd">                &lt;globus_sdk.transfer.response.TransferResponse&gt;`</span>
+
+<span class="sd">        **External Documentation**</span>
+
+<span class="sd">        See</span>
+<span class="sd">        `Get access rule by id \</span>
+<span class="sd">        &lt;https://docs.globus.org/api/transfer/acl/#get_access_rule_by_id&gt;`_</span>
+<span class="sd">        in the REST documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">endpoint_id</span> <span class="o">=</span> <span class="n">safe_stringify</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;TransferClient.get_endpoint_acl_rule({}, {}, ...)&quot;</span>
+                         <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">,</span> <span class="n">rule_id</span><span class="p">))</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qjoin_path</span><span class="p">(</span><span class="s1">&#39;endpoint&#39;</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">,</span> <span class="s1">&#39;access&#39;</span><span class="p">,</span> <span class="n">rule_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TransferClient.add_endpoint_acl_rule"><a class="viewcode-back" href="../../../clients/transfer.html#globus_sdk.TransferClient.add_endpoint_acl_rule">[docs]</a>    <span class="k">def</span> <span class="nf">add_endpoint_acl_rule</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">,</span> <span class="n">rule_data</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ``POST /endpoint/&lt;endpoint_id&gt;/access``</span>
+
+<span class="sd">        **Parameters**</span>
+
+<span class="sd">            ``endpoint_id`` (*string*)</span>
+<span class="sd">              ID of endpoint to which to add the acl</span>
+
+<span class="sd">            ``rule_data`` (*dict*)</span>
+<span class="sd">              A python dict representation of an ``access`` document</span>
+
+<span class="sd">        :rtype: :class:`TransferResponse</span>
+<span class="sd">                &lt;globus_sdk.transfer.response.TransferResponse&gt;`</span>
+
+<span class="sd">        **Examples**</span>
+
+<span class="sd">        &gt;&gt;&gt; tc = globus_sdk.TransferClient(...)</span>
+<span class="sd">        &gt;&gt;&gt; rule_data = {</span>
+<span class="sd">        &gt;&gt;&gt;   &quot;DATA_TYPE&quot;: &quot;access&quot;,</span>
+<span class="sd">        &gt;&gt;&gt;   &quot;principal_type&quot;: &quot;identity&quot;,</span>
+<span class="sd">        &gt;&gt;&gt;   &quot;principal&quot;: identity_id,</span>
+<span class="sd">        &gt;&gt;&gt;   &quot;path&quot;: &quot;/dataset1/&quot;,</span>
+<span class="sd">        &gt;&gt;&gt;   &quot;permissions&quot;: &quot;rw&quot;,</span>
+<span class="sd">        &gt;&gt;&gt; }</span>
+<span class="sd">        &gt;&gt;&gt; result = tc.add_endpoint_acl_rule(endpoint_id, rule_data)</span>
+<span class="sd">        &gt;&gt;&gt; rule_id = result[&quot;access_id&quot;]</span>
+
+<span class="sd">        **External Documentation**</span>
+
+<span class="sd">        See</span>
+<span class="sd">        `Create access rule \</span>
+<span class="sd">        &lt;https://docs.globus.org/api/transfer/acl/#rest_access_create&gt;`_</span>
+<span class="sd">        in the REST documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">endpoint_id</span> <span class="o">=</span> <span class="n">safe_stringify</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;TransferClient.add_endpoint_acl_rule({}, ...)&quot;</span>
+                         <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">))</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qjoin_path</span><span class="p">(</span><span class="s1">&#39;endpoint&#39;</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">,</span> <span class="s1">&#39;access&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">rule_data</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TransferClient.update_endpoint_acl_rule"><a class="viewcode-back" href="../../../clients/transfer.html#globus_sdk.TransferClient.update_endpoint_acl_rule">[docs]</a>    <span class="k">def</span> <span class="nf">update_endpoint_acl_rule</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">,</span> <span class="n">rule_id</span><span class="p">,</span> <span class="n">rule_data</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ``PUT /endpoint/&lt;endpoint_id&gt;/access/&lt;rule_id&gt;``</span>
+
+<span class="sd">        :rtype: :class:`TransferResponse</span>
+<span class="sd">                &lt;globus_sdk.transfer.response.TransferResponse&gt;`</span>
+
+<span class="sd">        **External Documentation**</span>
+
+<span class="sd">        See</span>
+<span class="sd">        `Update access rule \</span>
+<span class="sd">        &lt;https://docs.globus.org/api/transfer/acl/#update_access_rule&gt;`_</span>
+<span class="sd">        in the REST documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">endpoint_id</span> <span class="o">=</span> <span class="n">safe_stringify</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;TransferClient.update_endpoint_acl_rule({}, {}, ...)&quot;</span>
+                         <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">,</span> <span class="n">rule_id</span><span class="p">))</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qjoin_path</span><span class="p">(</span><span class="s1">&#39;endpoint&#39;</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">,</span> <span class="s1">&#39;access&#39;</span><span class="p">,</span> <span class="n">rule_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">rule_data</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TransferClient.delete_endpoint_acl_rule"><a class="viewcode-back" href="../../../clients/transfer.html#globus_sdk.TransferClient.delete_endpoint_acl_rule">[docs]</a>    <span class="k">def</span> <span class="nf">delete_endpoint_acl_rule</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">,</span> <span class="n">rule_id</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ``DELETE /endpoint/&lt;endpoint_id&gt;/access/&lt;rule_id&gt;``</span>
+
+<span class="sd">        :rtype: :class:`TransferResponse</span>
+<span class="sd">                &lt;globus_sdk.transfer.response.TransferResponse&gt;`</span>
+
+<span class="sd">        **External Documentation**</span>
+
+<span class="sd">        See</span>
+<span class="sd">        `Delete access rule \</span>
+<span class="sd">        &lt;https://docs.globus.org/api/transfer/acl/#delete_access_rule&gt;`_</span>
+<span class="sd">        in the REST documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">endpoint_id</span> <span class="o">=</span> <span class="n">safe_stringify</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;TransferClient.delete_endpoint_acl_rule({}, {})&quot;</span>
+                         <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">,</span> <span class="n">rule_id</span><span class="p">))</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qjoin_path</span><span class="p">(</span><span class="s1">&#39;endpoint&#39;</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">,</span> <span class="s1">&#39;access&#39;</span><span class="p">,</span> <span class="n">rule_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">path</span><span class="p">)</span></div>
+
+    <span class="c1">#</span>
+    <span class="c1"># Bookmarks</span>
+    <span class="c1">#</span>
+
+<div class="viewcode-block" id="TransferClient.bookmark_list"><a class="viewcode-back" href="../../../clients/transfer.html#globus_sdk.TransferClient.bookmark_list">[docs]</a>    <span class="k">def</span> <span class="nf">bookmark_list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ``GET /bookmark_list``</span>
+
+<span class="sd">        :rtype: :class:`IterableTransferResponse</span>
+<span class="sd">                &lt;globus_sdk.transfer.response.IterableTransferResponse&gt;`</span>
+
+<span class="sd">        **External Documentation**</span>
+
+<span class="sd">        See</span>
+<span class="sd">        `Get list of bookmarks \</span>
+<span class="sd">        &lt;https://docs.globus.org/api/transfer/endpoint_bookmarks/#get_list_of_bookmarks&gt;`_</span>
+<span class="sd">        in the REST documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;TransferClient.bookmark_list({})&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">params</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;bookmark_list&#39;</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
+                        <span class="n">response_class</span><span class="o">=</span><span class="n">IterableTransferResponse</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TransferClient.create_bookmark"><a class="viewcode-back" href="../../../clients/transfer.html#globus_sdk.TransferClient.create_bookmark">[docs]</a>    <span class="k">def</span> <span class="nf">create_bookmark</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bookmark_data</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ``POST /bookmark``</span>
+
+<span class="sd">        :rtype: :class:`TransferResponse</span>
+<span class="sd">                &lt;globus_sdk.transfer.response.TransferResponse&gt;`</span>
+
+<span class="sd">        **External Documentation**</span>
+
+<span class="sd">        See</span>
+<span class="sd">        `Create bookmark \</span>
+<span class="sd">        &lt;https://docs.globus.org/api/transfer/endpoint_bookmarks/#create_bookmark&gt;`_</span>
+<span class="sd">        in the REST documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;TransferClient.create_bookmark({})&quot;</span>
+                         <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">bookmark_data</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s1">&#39;bookmark&#39;</span><span class="p">,</span> <span class="n">bookmark_data</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TransferClient.get_bookmark"><a class="viewcode-back" href="../../../clients/transfer.html#globus_sdk.TransferClient.get_bookmark">[docs]</a>    <span class="k">def</span> <span class="nf">get_bookmark</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bookmark_id</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ``GET /bookmark/&lt;bookmark_id&gt;``</span>
+
+<span class="sd">        :rtype: :class:`TransferResponse</span>
+<span class="sd">                &lt;globus_sdk.transfer.response.TransferResponse&gt;`</span>
+
+<span class="sd">        **External Documentation**</span>
+
+<span class="sd">        See</span>
+<span class="sd">        `Get bookmark by id \</span>
+<span class="sd">        &lt;https://docs.globus.org/api/transfer/endpoint_bookmarks/#get_bookmark_by_id&gt;`_</span>
+<span class="sd">        in the REST documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;TransferClient.get_bookmark({})&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">bookmark_id</span><span class="p">))</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qjoin_path</span><span class="p">(</span><span class="s1">&#39;bookmark&#39;</span><span class="p">,</span> <span class="n">bookmark_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TransferClient.update_bookmark"><a class="viewcode-back" href="../../../clients/transfer.html#globus_sdk.TransferClient.update_bookmark">[docs]</a>    <span class="k">def</span> <span class="nf">update_bookmark</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bookmark_id</span><span class="p">,</span> <span class="n">bookmark_data</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ``PUT /bookmark/&lt;bookmark_id&gt;``</span>
+
+<span class="sd">        :rtype: :class:`TransferResponse</span>
+<span class="sd">                &lt;globus_sdk.transfer.response.TransferResponse&gt;`</span>
+
+<span class="sd">        **External Documentation**</span>
+
+<span class="sd">        See</span>
+<span class="sd">        `Update bookmark \</span>
+<span class="sd">        &lt;https://docs.globus.org/api/transfer/endpoint_bookmarks/#update_bookmark&gt;`_</span>
+<span class="sd">        in the REST documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;TransferClient.update_bookmark({})&quot;</span>
+                         <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">bookmark_id</span><span class="p">))</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qjoin_path</span><span class="p">(</span><span class="s1">&#39;bookmark&#39;</span><span class="p">,</span> <span class="n">bookmark_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">bookmark_data</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TransferClient.delete_bookmark"><a class="viewcode-back" href="../../../clients/transfer.html#globus_sdk.TransferClient.delete_bookmark">[docs]</a>    <span class="k">def</span> <span class="nf">delete_bookmark</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bookmark_id</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ``DELETE /bookmark/&lt;bookmark_id&gt;``</span>
+
+<span class="sd">        :rtype: :class:`TransferResponse</span>
+<span class="sd">                &lt;globus_sdk.transfer.response.TransferResponse&gt;`</span>
+
+<span class="sd">        **External Documentation**</span>
+
+<span class="sd">        See</span>
+<span class="sd">        `Delete bookmark by id\</span>
+<span class="sd">        &lt;https://docs.globus.org/api/transfer/endpoint_bookmarks/#delete_bookmark_by_id&gt;`_</span>
+<span class="sd">        in the REST documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;TransferClient.delete_bookmark({})&quot;</span>
+                         <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">bookmark_id</span><span class="p">))</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qjoin_path</span><span class="p">(</span><span class="s1">&#39;bookmark&#39;</span><span class="p">,</span> <span class="n">bookmark_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">path</span><span class="p">)</span></div>
+
+    <span class="c1">#</span>
+    <span class="c1"># Synchronous Filesys Operations</span>
+    <span class="c1">#</span>
+
+<div class="viewcode-block" id="TransferClient.operation_ls"><a class="viewcode-back" href="../../../clients/transfer.html#globus_sdk.TransferClient.operation_ls">[docs]</a>    <span class="k">def</span> <span class="nf">operation_ls</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ``GET /operation/endpoint/&lt;endpoint_id&gt;/ls``</span>
+
+<span class="sd">        :rtype: :class:`IterableTransferResponse</span>
+<span class="sd">                &lt;globus_sdk.transfer.response.IterableTransferResponse&gt;`</span>
+
+<span class="sd">        **Examples**</span>
+
+<span class="sd">        &gt;&gt;&gt; tc = globus_sdk.TransferClient(...)</span>
+<span class="sd">        &gt;&gt;&gt; for entry in tc.operation_ls(ep_id, path=&quot;/~/project1/&quot;):</span>
+<span class="sd">        &gt;&gt;&gt;     print(entry[&quot;name&quot;], entry[&quot;type&quot;])</span>
+
+<span class="sd">        **External Documentation**</span>
+
+<span class="sd">        See</span>
+<span class="sd">        `List Directory Contents \</span>
+<span class="sd">        &lt;https://docs.globus.org/api/transfer/file_operations/#list_directory_contents&gt;`_</span>
+<span class="sd">        in the REST documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">endpoint_id</span> <span class="o">=</span> <span class="n">safe_stringify</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;TransferClient.operation_ls({}, {})&quot;</span>
+                         <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">,</span> <span class="n">params</span><span class="p">))</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qjoin_path</span><span class="p">(</span><span class="s2">&quot;operation/endpoint&quot;</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">,</span> <span class="s2">&quot;ls&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
+                        <span class="n">response_class</span><span class="o">=</span><span class="n">IterableTransferResponse</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TransferClient.operation_mkdir"><a class="viewcode-back" href="../../../clients/transfer.html#globus_sdk.TransferClient.operation_mkdir">[docs]</a>    <span class="k">def</span> <span class="nf">operation_mkdir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ``POST /operation/endpoint/&lt;endpoint_id&gt;/mkdir``</span>
+
+<span class="sd">        :rtype: :class:`TransferResponse</span>
+<span class="sd">                &lt;globus_sdk.transfer.response.TransferResponse&gt;`</span>
+
+<span class="sd">        **Examples**</span>
+
+<span class="sd">        &gt;&gt;&gt; tc = globus_sdk.TransferClient(...)</span>
+<span class="sd">        &gt;&gt;&gt; tc.operation_mkdir(ep_id, path=&quot;/~/newdir/&quot;)</span>
+
+<span class="sd">        **External Documentation**</span>
+
+<span class="sd">        See</span>
+<span class="sd">        `Make Directory \</span>
+<span class="sd">        &lt;https://docs.globus.org/api/transfer/file_operations/#make_directory&gt;`_</span>
+<span class="sd">        in the REST documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">endpoint_id</span> <span class="o">=</span> <span class="n">safe_stringify</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;TransferClient.operation_mkdir({}, {}, {})&quot;</span>
+                         <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">params</span><span class="p">))</span>
+        <span class="n">resource_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qjoin_path</span><span class="p">(</span><span class="s2">&quot;operation/endpoint&quot;</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">,</span>
+                                        <span class="s2">&quot;mkdir&quot;</span><span class="p">)</span>
+        <span class="n">json_body</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;DATA_TYPE&#39;</span><span class="p">:</span> <span class="s1">&#39;mkdir&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;path&#39;</span><span class="p">:</span> <span class="n">path</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">resource_path</span><span class="p">,</span> <span class="n">json_body</span><span class="o">=</span><span class="n">json_body</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TransferClient.operation_rename"><a class="viewcode-back" href="../../../clients/transfer.html#globus_sdk.TransferClient.operation_rename">[docs]</a>    <span class="k">def</span> <span class="nf">operation_rename</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">,</span> <span class="n">oldpath</span><span class="p">,</span> <span class="n">newpath</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ``POST /operation/endpoint/&lt;endpoint_id&gt;/rename``</span>
+
+<span class="sd">        :rtype: :class:`TransferResponse</span>
+<span class="sd">                &lt;globus_sdk.transfer.response.TransferResponse&gt;`</span>
+
+<span class="sd">        **Examples**</span>
+
+<span class="sd">        &gt;&gt;&gt; tc = globus_sdk.TransferClient(...)</span>
+<span class="sd">        &gt;&gt;&gt; tc.operation_rename(ep_id, oldpath=&quot;/~/file1.txt&quot;,</span>
+<span class="sd">        &gt;&gt;&gt;                     newpath=&quot;/~/project1data.txt&quot;)</span>
+
+<span class="sd">        **External Documentation**</span>
+
+<span class="sd">        See</span>
+<span class="sd">        `Rename \</span>
+<span class="sd">        &lt;https://docs.globus.org/api/transfer/file_operations/#rename&gt;`_</span>
+<span class="sd">        in the REST documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">endpoint_id</span> <span class="o">=</span> <span class="n">safe_stringify</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;TransferClient.operation_rename({}, {}, {}, {})&quot;</span>
+                         <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">,</span> <span class="n">oldpath</span><span class="p">,</span> <span class="n">newpath</span><span class="p">,</span> <span class="n">params</span><span class="p">))</span>
+        <span class="n">resource_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qjoin_path</span><span class="p">(</span><span class="s2">&quot;operation/endpoint&quot;</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">,</span>
+                                        <span class="s2">&quot;rename&quot;</span><span class="p">)</span>
+        <span class="n">json_body</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;DATA_TYPE&#39;</span><span class="p">:</span> <span class="s1">&#39;mkdir&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;old_path&#39;</span><span class="p">:</span> <span class="n">oldpath</span><span class="p">,</span>
+            <span class="s1">&#39;new_path&#39;</span><span class="p">:</span> <span class="n">newpath</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">resource_path</span><span class="p">,</span> <span class="n">json_body</span><span class="o">=</span><span class="n">json_body</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span></div>
+
+    <span class="c1">#</span>
+    <span class="c1"># Task Submission</span>
+    <span class="c1">#</span>
+
+<div class="viewcode-block" id="TransferClient.get_submission_id"><a class="viewcode-back" href="../../../clients/transfer.html#globus_sdk.TransferClient.get_submission_id">[docs]</a>    <span class="k">def</span> <span class="nf">get_submission_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ``GET /submission_id``</span>
+
+<span class="sd">        :rtype: :class:`TransferResponse</span>
+<span class="sd">                &lt;globus_sdk.transfer.response.TransferResponse&gt;`</span>
+
+<span class="sd">        Submission IDs are required to submit tasks to the Transfer service</span>
+<span class="sd">        via the :meth:`submit_transfer &lt;.submit_transfer&gt;` and</span>
+<span class="sd">        :meth:`submit_delete &lt;.submit_delete&gt;` methods.</span>
+
+<span class="sd">        Most users will not need to call this method directly, as the</span>
+<span class="sd">        convenience classes :class:`TransferData &lt;globus_sdk.TransferData&gt;`</span>
+<span class="sd">        and :class:`DeleteData &lt;globus_sdk.DeleteData&gt;` will call it</span>
+<span class="sd">        automatically if they are not passed a ``submission_id`` explicitly.</span>
+
+<span class="sd">        **External Documentation**</span>
+
+<span class="sd">        See</span>
+<span class="sd">        `Get a submission id \</span>
+<span class="sd">        &lt;https://docs.globus.org/api/transfer/task_submit/#get_submission_id&gt;`_</span>
+<span class="sd">        in the REST documentation for more details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;TransferClient.get_submission_id({})&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">params</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;submission_id&quot;</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TransferClient.submit_transfer"><a class="viewcode-back" href="../../../clients/transfer.html#globus_sdk.TransferClient.submit_transfer">[docs]</a>    <span class="k">def</span> <span class="nf">submit_transfer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ``POST /transfer``</span>
+
+<span class="sd">        :rtype: :class:`TransferResponse</span>
+<span class="sd">                &lt;globus_sdk.transfer.response.TransferResponse&gt;`</span>
+
+<span class="sd">        **Examples**</span>
+
+<span class="sd">        &gt;&gt;&gt; tc = globus_sdk.TransferClient(...)</span>
+<span class="sd">        &gt;&gt;&gt; tdata = globus_sdk.TransferData(tc, source_endpoint_id,</span>
+<span class="sd">        &gt;&gt;&gt;                                 destination_endpoint_id,</span>
+<span class="sd">        &gt;&gt;&gt;                                 label=&quot;SDK example&quot;,</span>
+<span class="sd">        &gt;&gt;&gt;                                 sync_level=&quot;checksum&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; tdata.add_item(&quot;/source/path/dir/&quot;, &quot;/dest/path/dir/&quot;,</span>
+<span class="sd">        &gt;&gt;&gt;                recursive=True)</span>
+<span class="sd">        &gt;&gt;&gt; tdata.add_item(&quot;/source/path/file.txt&quot;,</span>
+<span class="sd">        &gt;&gt;&gt;                &quot;/dest/path/file.txt&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; transfer_result = tc.submit_transfer(tdata)</span>
+<span class="sd">        &gt;&gt;&gt; print(&quot;task_id =&quot;, transfer_result[&quot;task_id&quot;])</span>
+
+<span class="sd">        The `data` parameter can be a normal Python dictionary, or</span>
+<span class="sd">        a :class:`TransferData &lt;globus_sdk.TransferData&gt;` object.</span>
+
+<span class="sd">        **External Documentation**</span>
+
+<span class="sd">        See</span>
+<span class="sd">        `Submit a transfer task \</span>
+<span class="sd">        &lt;https://docs.globus.org/api/transfer/task_submit/#submit_transfer_task&gt;`_</span>
+<span class="sd">        in the REST documentation for more details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;TransferClient.submit_transfer(...)&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s1">&#39;/transfer&#39;</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TransferClient.submit_delete"><a class="viewcode-back" href="../../../clients/transfer.html#globus_sdk.TransferClient.submit_delete">[docs]</a>    <span class="k">def</span> <span class="nf">submit_delete</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ``POST /delete``</span>
+
+<span class="sd">        :rtype: :class:`TransferResponse</span>
+<span class="sd">                &lt;globus_sdk.transfer.response.TransferResponse&gt;`</span>
+
+<span class="sd">        **Examples**</span>
+
+<span class="sd">        &gt;&gt;&gt; tc = globus_sdk.TransferClient(...)</span>
+<span class="sd">        &gt;&gt;&gt; ddata = globus_sdk.DeleteData(tc, endpoint_id, recursive=True)</span>
+<span class="sd">        &gt;&gt;&gt; ddata.add_item(&quot;/dir/to/delete/&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; ddata.add_item(&quot;/file/to/delete/file.txt&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; delete_result = tc.submit_delete(ddata)</span>
+<span class="sd">        &gt;&gt;&gt; print(&quot;task_id =&quot;, delete_result[&quot;task_id&quot;])</span>
+
+<span class="sd">        The `data` parameter can be a normal Python dictionary, or</span>
+<span class="sd">        a :class:`DeleteData &lt;globus_sdk.DeleteData&gt;` object.</span>
+
+<span class="sd">        **External Documentation**</span>
+
+<span class="sd">        See</span>
+<span class="sd">        `Submit a delete task \</span>
+<span class="sd">        &lt;https://docs.globus.org/api/transfer/task_submit/#submit_delete_task&gt;`_</span>
+<span class="sd">        in the REST documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;TransferClient.submit_delete(...)&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s1">&#39;/delete&#39;</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span></div>
+
+    <span class="c1">#</span>
+    <span class="c1"># Task inspection and management</span>
+    <span class="c1">#</span>
+
+<div class="viewcode-block" id="TransferClient.endpoint_manager_task_list"><a class="viewcode-back" href="../../../clients/transfer.html#globus_sdk.TransferClient.endpoint_manager_task_list">[docs]</a>    <span class="k">def</span> <span class="nf">endpoint_manager_task_list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num_results</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get a list of tasks visible via ``activity_monitor`` role, as opposed</span>
+<span class="sd">        to tasks owned by the current user.</span>
+
+<span class="sd">        ``GET endpoint_manager/task_list``</span>
+
+<span class="sd">        :rtype: iterable of :class:`GlobusResponse</span>
+<span class="sd">                &lt;globus_sdk.response.GlobusResponse&gt;`</span>
+
+<span class="sd">        **Parameters**</span>
+
+<span class="sd">            ``num_results`` (*int* or *None*)</span>
+<span class="sd">              default ``10``</span>
+<span class="sd">              The number of tasks to fetch from the service. May be set to</span>
+<span class="sd">              ``None`` to request the maximum allowable number of results.</span>
+
+<span class="sd">            ``params``</span>
+<span class="sd">              Any additional parameters will be passed through as query params.</span>
+
+<span class="sd">        **Examples**</span>
+
+<span class="sd">        Fetch the default number (10) of tasks and print some basic info:</span>
+
+<span class="sd">        &gt;&gt;&gt; tc = TransferClient(...)</span>
+<span class="sd">        &gt;&gt;&gt; for task in tc.endpoint_manager_task_list():</span>
+<span class="sd">        &gt;&gt;&gt;     print(&quot;Task({}): {} -&gt; {}\n  was submitted by\n  {}&quot;.format(</span>
+<span class="sd">        &gt;&gt;&gt;         task[&quot;task_id&quot;], task[&quot;source_endpoint&quot;],</span>
+<span class="sd">        &gt;&gt;&gt;         task[&quot;destination_endpoint&quot;), task[&quot;owner_string&quot;])</span>
+
+<span class="sd">        Do that same operation on *all* tasks visible via ``activity_monitor``</span>
+<span class="sd">        status:</span>
+
+<span class="sd">        &gt;&gt;&gt; tc = TransferClient(...)</span>
+<span class="sd">        &gt;&gt;&gt; for task in tc.endpoint_manager_task_list(num_results=None):</span>
+<span class="sd">        &gt;&gt;&gt;     print(&quot;Task({}): {} -&gt; {}\n  was submitted by\n  {}&quot;.format(</span>
+<span class="sd">        &gt;&gt;&gt;         task[&quot;task_id&quot;], task[&quot;source_endpoint&quot;],</span>
+<span class="sd">        &gt;&gt;&gt;         task[&quot;destination_endpoint&quot;), task[&quot;owner_string&quot;])</span>
+
+<span class="sd">        **External Documentation**</span>
+
+<span class="sd">        See</span>
+<span class="sd">        `Advanced Endpoint Management: Get tasks \</span>
+<span class="sd">        &lt;https://docs.globus.org/api/transfer/advanced_endpoint_management/#get_tasks&gt;`_</span>
+<span class="sd">        in the REST documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;TransferClient.endpoint_manager_task_list(...)&quot;</span><span class="p">)</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qjoin_path</span><span class="p">(</span><span class="s1">&#39;endpoint_manager&#39;</span><span class="p">,</span> <span class="s1">&#39;task_list&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">PaginatedResource</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="n">params</span><span class="p">},</span>
+            <span class="n">num_results</span><span class="o">=</span><span class="n">num_results</span><span class="p">,</span> <span class="n">max_results_per_call</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+            <span class="n">paging_style</span><span class="o">=</span><span class="n">PaginatedResource</span><span class="o">.</span><span class="n">PAGING_STYLE_HAS_NEXT</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TransferClient.task_list"><a class="viewcode-back" href="../../../clients/transfer.html#globus_sdk.TransferClient.task_list">[docs]</a>    <span class="k">def</span> <span class="nf">task_list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num_results</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get an iterable of task documents owned by the current user.</span>
+
+<span class="sd">        ``GET /task_list``</span>
+
+<span class="sd">        :rtype: iterable of :class:`GlobusResponse</span>
+<span class="sd">                &lt;globus_sdk.response.GlobusResponse&gt;`</span>
+
+<span class="sd">        **Parameters**</span>
+
+<span class="sd">            ``num_results`` (*int* or *None*)</span>
+<span class="sd">              default ``10``</span>
+<span class="sd">              The number of tasks to fetch from the service. May be set to</span>
+<span class="sd">              ``None`` to request the maximum allowable number of results.</span>
+
+<span class="sd">            ``params``</span>
+<span class="sd">              Any additional parameters will be passed through as query params.</span>
+
+<span class="sd">        **Examples**</span>
+
+<span class="sd">        Fetch the default number (10) of tasks and print some basic info:</span>
+
+<span class="sd">        &gt;&gt;&gt; tc = TransferClient(...)</span>
+<span class="sd">        &gt;&gt;&gt; for task in tc.task_list():</span>
+<span class="sd">        &gt;&gt;&gt;     print(&quot;Task({}): {} -&gt; {}&quot;.format(</span>
+<span class="sd">        &gt;&gt;&gt;         task[&quot;task_id&quot;], task[&quot;source_endpoint&quot;],</span>
+<span class="sd">        &gt;&gt;&gt;         task[&quot;destination_endpoint&quot;))</span>
+
+<span class="sd">        **External Documentation**</span>
+
+<span class="sd">        See</span>
+<span class="sd">        `Task list \</span>
+<span class="sd">        &lt;https://docs.globus.org/api/transfer/task/#get_task_list&gt;`_</span>
+<span class="sd">        in the REST documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;TransferClient.task_list(...)&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">PaginatedResource</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">,</span> <span class="s1">&#39;task_list&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="n">params</span><span class="p">},</span>
+            <span class="n">num_results</span><span class="o">=</span><span class="n">num_results</span><span class="p">,</span> <span class="n">max_results_per_call</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+            <span class="n">paging_style</span><span class="o">=</span><span class="n">PaginatedResource</span><span class="o">.</span><span class="n">PAGING_STYLE_TOTAL</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TransferClient.task_event_list"><a class="viewcode-back" href="../../../clients/transfer.html#globus_sdk.TransferClient.task_event_list">[docs]</a>    <span class="k">def</span> <span class="nf">task_event_list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task_id</span><span class="p">,</span> <span class="n">num_results</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        List events (for example, faults and errors) for a given Task.</span>
+
+<span class="sd">        ``GET /task/&lt;task_id&gt;/event_list``</span>
+
+<span class="sd">        :rtype: iterable of :class:`GlobusResponse</span>
+<span class="sd">                &lt;globus_sdk.response.GlobusResponse&gt;`</span>
+
+<span class="sd">        **Parameters**</span>
+
+<span class="sd">            ``task_id`` (*string*)</span>
+<span class="sd">              The task to inspect.</span>
+
+<span class="sd">            ``num_results`` (*int* or *None*)</span>
+<span class="sd">              default ``10``</span>
+<span class="sd">              The number of events to fetch from the service. May be set to</span>
+<span class="sd">              ``None`` to request the maximum allowable number of results.</span>
+
+<span class="sd">            ``params``</span>
+<span class="sd">              Any additional parameters will be passed through as query params.</span>
+
+<span class="sd">        **Examples**</span>
+
+<span class="sd">        Fetch the default number (10) of events and print some basic info:</span>
+
+<span class="sd">        &gt;&gt;&gt; tc = TransferClient(...)</span>
+<span class="sd">        &gt;&gt;&gt; task_id = ...</span>
+<span class="sd">        &gt;&gt;&gt; for event in tc.task_event_list(task_id):</span>
+<span class="sd">        &gt;&gt;&gt;     print(&quot;Event on Task({}) at {}:\n{}&quot;.format(</span>
+<span class="sd">        &gt;&gt;&gt;         task_id, event[&quot;time&quot;], event[&quot;description&quot;])</span>
+
+<span class="sd">        **External Documentation**</span>
+
+<span class="sd">        See</span>
+<span class="sd">        `Get event list \</span>
+<span class="sd">        &lt;https://docs.globus.org/api/transfer/task/#get_event_list&gt;`_</span>
+<span class="sd">        in the REST documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;TransferClient.task_event_list({}, ...)&quot;</span>
+                         <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">task_id</span><span class="p">))</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qjoin_path</span><span class="p">(</span><span class="s1">&#39;task&#39;</span><span class="p">,</span> <span class="n">task_id</span><span class="p">,</span> <span class="s1">&#39;event_list&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">PaginatedResource</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="n">params</span><span class="p">},</span>
+            <span class="n">num_results</span><span class="o">=</span><span class="n">num_results</span><span class="p">,</span> <span class="n">max_results_per_call</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+            <span class="n">paging_style</span><span class="o">=</span><span class="n">PaginatedResource</span><span class="o">.</span><span class="n">PAGING_STYLE_TOTAL</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TransferClient.get_task"><a class="viewcode-back" href="../../../clients/transfer.html#globus_sdk.TransferClient.get_task">[docs]</a>    <span class="k">def</span> <span class="nf">get_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task_id</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ``GET /task/&lt;task_id&gt;``</span>
+
+<span class="sd">        :rtype: :class:`TransferResponse</span>
+<span class="sd">                &lt;globus_sdk.transfer.response.TransferResponse&gt;`</span>
+
+<span class="sd">        **External Documentation**</span>
+
+<span class="sd">        See</span>
+<span class="sd">        `Get task by id \</span>
+<span class="sd">        &lt;https://docs.globus.org/api/transfer/task/#get_task_by_id&gt;`_</span>
+<span class="sd">        in the REST documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;TransferClient.get_task({}, ...)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">task_id</span><span class="p">))</span>
+        <span class="n">resource_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qjoin_path</span><span class="p">(</span><span class="s2">&quot;task&quot;</span><span class="p">,</span> <span class="n">task_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">resource_path</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TransferClient.update_task"><a class="viewcode-back" href="../../../clients/transfer.html#globus_sdk.TransferClient.update_task">[docs]</a>    <span class="k">def</span> <span class="nf">update_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task_id</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ``PUT /task/&lt;task_id&gt;``</span>
+
+<span class="sd">        :rtype: :class:`TransferResponse</span>
+<span class="sd">                &lt;globus_sdk.transfer.response.TransferResponse&gt;`</span>
+
+<span class="sd">        **External Documentation**</span>
+
+<span class="sd">        See</span>
+<span class="sd">        `Update task by id \</span>
+<span class="sd">        &lt;https://docs.globus.org/api/transfer/task/#update_task_by_id&gt;`_</span>
+<span class="sd">        in the REST documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;TransferClient.update_task({}, ...)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">task_id</span><span class="p">))</span>
+        <span class="n">resource_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qjoin_path</span><span class="p">(</span><span class="s2">&quot;task&quot;</span><span class="p">,</span> <span class="n">task_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">resource_path</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TransferClient.cancel_task"><a class="viewcode-back" href="../../../clients/transfer.html#globus_sdk.TransferClient.cancel_task">[docs]</a>    <span class="k">def</span> <span class="nf">cancel_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task_id</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ``POST /task/&lt;task_id&gt;/cancel``</span>
+
+<span class="sd">        :rtype: :class:`TransferResponse</span>
+<span class="sd">                &lt;globus_sdk.transfer.response.TransferResponse&gt;`</span>
+
+<span class="sd">        **External Documentation**</span>
+
+<span class="sd">        See</span>
+<span class="sd">        `Cancel task by id \</span>
+<span class="sd">        &lt;https://docs.globus.org/api/transfer/task/#cancel_task_by_id&gt;`_</span>
+<span class="sd">        in the REST documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;TransferClient.cancel_task({})&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">task_id</span><span class="p">))</span>
+        <span class="n">resource_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qjoin_path</span><span class="p">(</span><span class="s2">&quot;task&quot;</span><span class="p">,</span> <span class="n">task_id</span><span class="p">,</span> <span class="s2">&quot;cancel&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">resource_path</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TransferClient.task_wait"><a class="viewcode-back" href="../../../clients/transfer.html#globus_sdk.TransferClient.task_wait">[docs]</a>    <span class="k">def</span> <span class="nf">task_wait</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task_id</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">polling_interval</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Wait until a Task is complete or fails, with a time limit. If the task</span>
+<span class="sd">        is &quot;ACTIVE&quot; after time runs out, returns ``False``. Otherwise returns</span>
+<span class="sd">        ``True``.</span>
+
+<span class="sd">        **Parameters**</span>
+
+<span class="sd">            ``task_id`` (*string*)</span>
+<span class="sd">              ID of the Task to wait on for completion</span>
+
+<span class="sd">            ``timeout`` (*int*)</span>
+<span class="sd">              Number of seconds to wait in total. Minimum 1</span>
+
+<span class="sd">            ``polling_interval`` (*int*)</span>
+<span class="sd">              Number of seconds between queries to Globus about the Task</span>
+<span class="sd">              status. Minimum 1</span>
+
+<span class="sd">        **Examples**</span>
+
+<span class="sd">        If you want to wait for a task to terminate, but want to warn every</span>
+<span class="sd">        minute that it doesn&#39;t terminate, you could:</span>
+
+<span class="sd">        &gt;&gt;&gt; tc = TransferClient(...)</span>
+<span class="sd">        &gt;&gt;&gt; while not tc.task_wait(task_id, timeout=60):</span>
+<span class="sd">        &gt;&gt;&gt;     print(&quot;Another minute went by without {0} terminating&quot;</span>
+<span class="sd">        &gt;&gt;&gt;           .format(task_id))</span>
+
+<span class="sd">        Or perhaps you want to check on a task every minute for 10 minutes, and</span>
+<span class="sd">        give up if it doesn&#39;t complete in that time:</span>
+
+<span class="sd">        &gt;&gt;&gt; tc = TransferClient(...)</span>
+<span class="sd">        &gt;&gt;&gt; done = tc.task_wait(task_id, timeout=600, polling_interval=60):</span>
+<span class="sd">        &gt;&gt;&gt; if not done:</span>
+<span class="sd">        &gt;&gt;&gt;     print(&quot;{0} didn&#39;t successfully terminate!&quot;</span>
+<span class="sd">        &gt;&gt;&gt;           .format(task_id))</span>
+<span class="sd">        &gt;&gt;&gt; else:</span>
+<span class="sd">        &gt;&gt;&gt;     print(&quot;{0} completed&quot;.format(task_id))</span>
+
+<span class="sd">        You could print dots while you wait for a task by only waiting one</span>
+<span class="sd">        second at a time:</span>
+
+<span class="sd">        &gt;&gt;&gt; tc = TransferClient(...)</span>
+<span class="sd">        &gt;&gt;&gt; while not tc.task_wait(task_id, timeout=1, polling_interval=1):</span>
+<span class="sd">        &gt;&gt;&gt;     print(&quot;.&quot;, end=&quot;&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; print(&quot;\n{0} completed!&quot;.format(task_id))</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;TransferClient.task_wait({}, {}, {})&quot;</span>
+                         <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">task_id</span><span class="p">,</span> <span class="n">timeout</span><span class="p">,</span> <span class="n">polling_interval</span><span class="p">))</span>
+
+        <span class="c1"># check valid args</span>
+        <span class="k">if</span> <span class="n">timeout</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                <span class="s2">&quot;task_wait() timeout={} is less than minimum of 1s&quot;</span>
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">timeout</span><span class="p">))</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;TransferClient.task_wait timeout has a minimum of 1&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">polling_interval</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                <span class="s2">&quot;task_wait() polling_interval={} is less than minimum of 1s&quot;</span>
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">polling_interval</span><span class="p">))</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;TransferClient.task_wait polling_interval has a minimum of 1&quot;</span><span class="p">)</span>
+
+        <span class="c1"># ensure that we always wait at least one interval, even if the timeout</span>
+        <span class="c1"># is shorter than the polling interval, by reducing the interval to the</span>
+        <span class="c1"># timeout if it is larger</span>
+        <span class="n">polling_interval</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">timeout</span><span class="p">,</span> <span class="n">polling_interval</span><span class="p">)</span>
+
+        <span class="c1"># helper for readability</span>
+        <span class="k">def</span> <span class="nf">timed_out</span><span class="p">(</span><span class="n">waited_time</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">waited_time</span> <span class="o">&gt;</span> <span class="n">timeout</span>
+
+        <span class="n">waited_time</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="c1"># doing this as a while-True loop actually makes it simpler than doing</span>
+        <span class="c1"># while not timed_out(waited_time) because of the end condition</span>
+        <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+            <span class="c1"># get task, check if status != ACTIVE</span>
+            <span class="n">task</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_task</span><span class="p">(</span><span class="n">task_id</span><span class="p">)</span>
+            <span class="n">status</span> <span class="o">=</span> <span class="n">task</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">status</span> <span class="o">!=</span> <span class="s1">&#39;ACTIVE&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                    <span class="s2">&quot;task_wait(task_id={}) terminated with status={}&quot;</span>
+                    <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">task_id</span><span class="p">,</span> <span class="n">status</span><span class="p">))</span>
+                <span class="k">return</span> <span class="bp">True</span>
+
+            <span class="c1"># make sure to check if we timed out before sleeping again, so we</span>
+            <span class="c1"># don&#39;t sleep an extra polling_interval</span>
+            <span class="n">waited_time</span> <span class="o">+=</span> <span class="n">polling_interval</span>
+            <span class="k">if</span> <span class="n">timed_out</span><span class="p">(</span><span class="n">waited_time</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                    <span class="s2">&quot;task_wait(task_id={}) timed out&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">task_id</span><span class="p">))</span>
+                <span class="k">return</span> <span class="bp">False</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                <span class="s2">&quot;task_wait(task_id={}) waiting {}s&quot;</span>
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">task_id</span><span class="p">,</span> <span class="n">polling_interval</span><span class="p">))</span>
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">polling_interval</span><span class="p">)</span></div>
+        <span class="c1"># unreachable -- end of task_wait</span>
+
+<div class="viewcode-block" id="TransferClient.task_pause_info"><a class="viewcode-back" href="../../../clients/transfer.html#globus_sdk.TransferClient.task_pause_info">[docs]</a>    <span class="k">def</span> <span class="nf">task_pause_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task_id</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ``GET /task/&lt;task_id&gt;/pause_info``</span>
+
+<span class="sd">        :rtype: :class:`TransferResponse</span>
+<span class="sd">                &lt;globus_sdk.transfer.response.TransferResponse&gt;`</span>
+
+<span class="sd">        **External Documentation**</span>
+
+<span class="sd">        See</span>
+<span class="sd">        `Get task pause info \</span>
+<span class="sd">        &lt;https://docs.globus.org/api/transfer/task/#get_task_pause_info&gt;`_</span>
+<span class="sd">        in the REST documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;TransferClient.task_pause_info({}, ...)&quot;</span>
+                         <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">task_id</span><span class="p">))</span>
+        <span class="n">resource_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qjoin_path</span><span class="p">(</span><span class="s2">&quot;task&quot;</span><span class="p">,</span> <span class="n">task_id</span><span class="p">,</span> <span class="s2">&quot;pause_info&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">resource_path</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TransferClient.task_successful_transfers"><a class="viewcode-back" href="../../../clients/transfer.html#globus_sdk.TransferClient.task_successful_transfers">[docs]</a>    <span class="k">def</span> <span class="nf">task_successful_transfers</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task_id</span><span class="p">,</span> <span class="n">num_results</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the successful file transfers for a completed Task.</span>
+
+<span class="sd">        ``GET /task/&lt;task_id&gt;/successful_transfers``</span>
+
+<span class="sd">        :rtype: iterable of :class:`GlobusResponse</span>
+<span class="sd">                &lt;globus_sdk.response.GlobusResponse&gt;`</span>
+
+<span class="sd">        **Parameters**</span>
+
+<span class="sd">            ``task_id`` (*string*)</span>
+<span class="sd">              The task to inspect.</span>
+
+<span class="sd">            ``num_results`` (*int* or *None*)</span>
+<span class="sd">              default ``100``</span>
+<span class="sd">              The number of file transfer records to fetch from the service.</span>
+<span class="sd">              May be set to ``None`` to request the maximum allowable number of</span>
+<span class="sd">              results.</span>
+
+<span class="sd">            ``params``</span>
+<span class="sd">              Any additional parameters will be passed through as query params.</span>
+
+<span class="sd">        **Examples**</span>
+
+<span class="sd">        Fetch all transferred files for a task and print some basic info:</span>
+
+<span class="sd">        &gt;&gt;&gt; tc = TransferClient(...)</span>
+<span class="sd">        &gt;&gt;&gt; task_id = ...</span>
+<span class="sd">        &gt;&gt;&gt; for info in tc.task_successful_transfers(task_id):</span>
+<span class="sd">        &gt;&gt;&gt;     print(&quot;{} -&gt; {}&quot;.format(</span>
+<span class="sd">        &gt;&gt;&gt;         info[&quot;source_path&quot;], info[&quot;destination_path&quot;))</span>
+
+<span class="sd">        **External Documentation**</span>
+
+<span class="sd">        See</span>
+<span class="sd">        `Get Task Successful Transfers\</span>
+<span class="sd">        &lt;https://docs.globus.org/api/transfer/task/#get_task_successful_transfers&gt;`_</span>
+<span class="sd">        in the REST documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;TransferClient.task_successful_transfers({}, ...)&quot;</span>
+                         <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">task_id</span><span class="p">))</span>
+
+        <span class="n">resource_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qjoin_path</span><span class="p">(</span><span class="s2">&quot;task&quot;</span><span class="p">,</span> <span class="n">task_id</span><span class="p">,</span>
+                                        <span class="s2">&quot;successful_transfers&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">PaginatedResource</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">,</span> <span class="n">resource_path</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="n">params</span><span class="p">},</span>
+            <span class="n">num_results</span><span class="o">=</span><span class="n">num_results</span><span class="p">,</span> <span class="n">max_results_per_call</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+            <span class="n">paging_style</span><span class="o">=</span><span class="n">PaginatedResource</span><span class="o">.</span><span class="n">PAGING_STYLE_MARKER</span><span class="p">)</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">globus-sdk-python 0.5.1 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2016, Globus.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.1.
+    </div>
+  </body>
+</html>

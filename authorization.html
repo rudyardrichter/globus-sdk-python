@@ -1,0 +1,299 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>API Authorization &mdash; globus-sdk-python 0.5.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.5.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="globus-sdk-python 0.5.1 documentation" href="index.html" />
+    <link rel="next" title="Globus SDK Configuration" href="config.html" />
+    <link rel="prev" title="Resouce Servers and Scopes" href="oauth/resource_servers.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="config.html" title="Globus SDK Configuration"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="oauth/resource_servers.html" title="Resouce Servers and Scopes"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">globus-sdk-python 0.5.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="api-authorization">
+<span id="authorization"></span><h1>API Authorization<a class="headerlink" href="#api-authorization" title="Permalink to this headline">¶</a></h1>
+<p>Authorizing calls against Globus can be a complex process.
+In particular, if you are using Refresh Tokens and short-lived Access Tokens,
+you may need to take particular care managing your Authorization state.</p>
+<p>Within the SDK, we solve this problem by using <a class="reference internal" href="#globus_sdk.authorizers.base.GlobusAuthorizer" title="globus_sdk.authorizers.base.GlobusAuthorizer"><code class="xref py py-class docutils literal"><span class="pre">GlobusAuthorizers</span></code></a>, which are attached to clients.
+These are a very simple class of generic objects which define a way of getting
+an up-to-date <code class="docutils literal"><span class="pre">Authorization</span></code> header, and trying to handle a 401 (if that
+header is expired).</p>
+<p>Whenever using the <a class="reference internal" href="clients.html#clients"><span class="std std-ref">Service Clients</span></a>, you should be passing in an
+authorizer when you create a new client unless otherwise specified.</p>
+<p>The type of authorizer you will use depends very much on your application, but
+if you want examples you should look at the <a class="reference internal" href="examples/authorization.html#examples-authorization"><span class="std std-ref">examples section</span></a>.
+It may help to start with the examples and come back to the full documentation
+afterwards.</p>
+<div class="section" id="the-authorizer-interface">
+<h2>The Authorizer Interface<a class="headerlink" href="#the-authorizer-interface" title="Permalink to this headline">¶</a></h2>
+<p>We define the interface for <code class="docutils literal"><span class="pre">GlobusAuthorizer</span></code> objects in terms of an
+Abstract Base Class:</p>
+<dl class="class">
+<dt id="globus_sdk.authorizers.base.GlobusAuthorizer">
+<em class="property">class </em><code class="descclassname">globus_sdk.authorizers.base.</code><code class="descname">GlobusAuthorizer</code><a class="reference internal" href="_modules/globus_sdk/authorizers/base.html#GlobusAuthorizer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#globus_sdk.authorizers.base.GlobusAuthorizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>A <code class="docutils literal"><span class="pre">GlobusAuthorizer</span></code> is a very simple object which generates valid
+Authorization headers.
+It may also have handling for responses that indicate that it has provided
+an invalid Authorization header.</p>
+<dl class="method">
+<dt id="globus_sdk.authorizers.base.GlobusAuthorizer.set_authorization_header">
+<code class="descname">set_authorization_header</code><span class="sig-paren">(</span><em>header_dict</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/globus_sdk/authorizers/base.html#GlobusAuthorizer.set_authorization_header"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#globus_sdk.authorizers.base.GlobusAuthorizer.set_authorization_header" title="Permalink to this definition">¶</a></dt>
+<dd><p>Takes a dict of headers, and adds to it a mapping of
+<code class="docutils literal"><span class="pre">{&quot;Authorization&quot;:</span> <span class="pre">&quot;...&quot;}</span></code> per this object&#8217;s type of Authorization.
+Importantly, if an <code class="docutils literal"><span class="pre">Authorization</span></code> header is already set, this method
+is expected to overwrite it.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="globus_sdk.authorizers.base.GlobusAuthorizer.handle_missing_authorization">
+<code class="descname">handle_missing_authorization</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/globus_sdk/authorizers/base.html#GlobusAuthorizer.handle_missing_authorization"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#globus_sdk.authorizers.base.GlobusAuthorizer.handle_missing_authorization" title="Permalink to this definition">¶</a></dt>
+<dd><p>This operation should be called if a request is made with an
+Authorization header generated by this object which returns a 401
+(HTTP Unauthorized).
+If the <code class="docutils literal"><span class="pre">GlobusAuthorizer</span></code> thinks that it can take some action to
+remedy this, it should update its state and return <code class="docutils literal"><span class="pre">True</span></code>.
+If the Authorizer cannot do anything in the event of a 401, this <em>may</em>
+update state, but importantly returns <code class="docutils literal"><span class="pre">False</span></code>.</p>
+<p>By default, this always returns <code class="docutils literal"><span class="pre">False</span></code> and takes no other action.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="authorizer-types">
+<h2>Authorizer Types<a class="headerlink" href="#authorizer-types" title="Permalink to this headline">¶</a></h2>
+<p>All of these types of authorizers can be imported from
+<code class="docutils literal"><span class="pre">globus_sdk.authorizers</span></code>.</p>
+<dl class="class">
+<dt id="globus_sdk.NullAuthorizer">
+<em class="property">class </em><code class="descclassname">globus_sdk.</code><code class="descname">NullAuthorizer</code><a class="reference internal" href="_modules/globus_sdk/authorizers/null.html#NullAuthorizer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#globus_sdk.NullAuthorizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#globus_sdk.authorizers.base.GlobusAuthorizer" title="globus_sdk.authorizers.base.GlobusAuthorizer"><code class="xref py py-class docutils literal"><span class="pre">globus_sdk.authorizers.base.GlobusAuthorizer</span></code></a></p>
+<p>This Authorizer implements No Authentication &#8211; as in, it ensures that
+there is no Authorization header.</p>
+<dl class="method">
+<dt id="globus_sdk.NullAuthorizer.set_authorization_header">
+<code class="descname">set_authorization_header</code><span class="sig-paren">(</span><em>header_dict</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/globus_sdk/authorizers/null.html#NullAuthorizer.set_authorization_header"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#globus_sdk.NullAuthorizer.set_authorization_header" title="Permalink to this definition">¶</a></dt>
+<dd><p>Removes the Authorization header from the given header dict if one was
+present.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="globus_sdk.BasicAuthorizer">
+<em class="property">class </em><code class="descclassname">globus_sdk.</code><code class="descname">BasicAuthorizer</code><span class="sig-paren">(</span><em>username</em>, <em>password</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/globus_sdk/authorizers/basic.html#BasicAuthorizer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#globus_sdk.BasicAuthorizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#globus_sdk.authorizers.base.GlobusAuthorizer" title="globus_sdk.authorizers.base.GlobusAuthorizer"><code class="xref py py-class docutils literal"><span class="pre">globus_sdk.authorizers.base.GlobusAuthorizer</span></code></a></p>
+<p>This Authorizer implements Basic Authentication.
+Given a &#8220;username&#8221; and &#8220;password&#8221;, they are sent base64 encoded in the
+header.</p>
+<p><strong>Parameters</strong></p>
+<blockquote>
+<div><dl class="docutils">
+<dt><code class="docutils literal"><span class="pre">username</span></code> (<em>string</em>)</dt>
+<dd>Username component for Basic Auth</dd>
+<dt><code class="docutils literal"><span class="pre">password</span></code> (<em>string</em>)</dt>
+<dd>Password component for Basic Auth</dd>
+</dl>
+</div></blockquote>
+<dl class="method">
+<dt id="globus_sdk.BasicAuthorizer.set_authorization_header">
+<code class="descname">set_authorization_header</code><span class="sig-paren">(</span><em>header_dict</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/globus_sdk/authorizers/basic.html#BasicAuthorizer.set_authorization_header"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#globus_sdk.BasicAuthorizer.set_authorization_header" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the <code class="docutils literal"><span class="pre">Authorization</span></code> header to
+&#8220;Basic &lt;base64 encoded username:password&gt;&#8221;</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="globus_sdk.AccessTokenAuthorizer">
+<em class="property">class </em><code class="descclassname">globus_sdk.</code><code class="descname">AccessTokenAuthorizer</code><span class="sig-paren">(</span><em>access_token</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/globus_sdk/authorizers/access_token.html#AccessTokenAuthorizer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#globus_sdk.AccessTokenAuthorizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#globus_sdk.authorizers.base.GlobusAuthorizer" title="globus_sdk.authorizers.base.GlobusAuthorizer"><code class="xref py py-class docutils literal"><span class="pre">globus_sdk.authorizers.base.GlobusAuthorizer</span></code></a></p>
+<p>Implements Authorization using a single Access Token with no Refresh
+Tokens. This is sent as a Bearer token in the header &#8211; basically
+unadorned.</p>
+<p><strong>Parameters</strong></p>
+<blockquote>
+<div><dl class="docutils">
+<dt><code class="docutils literal"><span class="pre">access_token</span></code> (<em>string</em>)</dt>
+<dd>An access token for Globus Auth</dd>
+</dl>
+</div></blockquote>
+<dl class="method">
+<dt id="globus_sdk.AccessTokenAuthorizer.set_authorization_header">
+<code class="descname">set_authorization_header</code><span class="sig-paren">(</span><em>header_dict</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/globus_sdk/authorizers/access_token.html#AccessTokenAuthorizer.set_authorization_header"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#globus_sdk.AccessTokenAuthorizer.set_authorization_header" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the <code class="docutils literal"><span class="pre">Authorization</span></code> header to
+&#8220;Bearer &lt;access_token&gt;&#8221;</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="globus_sdk.RefreshTokenAuthorizer">
+<em class="property">class </em><code class="descclassname">globus_sdk.</code><code class="descname">RefreshTokenAuthorizer</code><span class="sig-paren">(</span><em>refresh_token</em>, <em>auth_client</em>, <em>access_token=None</em>, <em>expires_at=None</em>, <em>on_refresh=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/globus_sdk/authorizers/refresh_token.html#RefreshTokenAuthorizer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#globus_sdk.RefreshTokenAuthorizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#globus_sdk.authorizers.base.GlobusAuthorizer" title="globus_sdk.authorizers.base.GlobusAuthorizer"><code class="xref py py-class docutils literal"><span class="pre">globus_sdk.authorizers.base.GlobusAuthorizer</span></code></a></p>
+<p>Implements Authorization using a Refresh Token to periodically fetch
+renewed Access Tokens. It may be initialized with an Access Token, or it
+will fetch one the first time that <code class="docutils literal"><span class="pre">set_authorization_header()</span></code> is
+called.</p>
+<p>This Authorizer is by far the most sophisticated <code class="docutils literal"><span class="pre">GlobusAuthorizer</span></code>.
+Example usage looks something like this:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">globus_sdk</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">auth_client</span> <span class="o">=</span> <span class="n">globus_sdk</span><span class="o">.</span><span class="n">AuthClient</span><span class="p">(</span><span class="n">client_id</span><span class="o">=...</span><span class="p">,</span> <span class="n">client_secret</span><span class="o">=...</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># do some flow to get a refresh token from auth_client</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">rt_authorizer</span> <span class="o">=</span> <span class="n">globus_sdk</span><span class="o">.</span><span class="n">RefreshTokenAuthorizer</span><span class="p">(</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="n">refresh_token</span><span class="p">,</span> <span class="n">auth_client</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># create a new client</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">transfer_client</span> <span class="o">=</span> <span class="n">globus_sdk</span><span class="o">.</span><span class="n">TransferClient</span><span class="p">(</span><span class="n">authorizer</span><span class="o">=</span><span class="n">rt_authorizer</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>anything that inherits from <code class="xref py py-class docutils literal"><span class="pre">BaseClient</span></code>, so
+at least <code class="docutils literal"><span class="pre">TransferClient</span></code> and <code class="docutils literal"><span class="pre">AuthClient</span></code> will automatically handle
+usage of the <code class="docutils literal"><span class="pre">RefreshTokenAuthorizer</span></code>.</p>
+<p><strong>Parameters</strong></p>
+<blockquote>
+<div><dl class="docutils">
+<dt><code class="docutils literal"><span class="pre">refresh_token</span></code> (<em>string</em>)</dt>
+<dd>Refresh Token for Globus Auth</dd>
+<dt><code class="docutils literal"><span class="pre">auth_client</span></code> (<a class="reference internal" href="clients/auth.html#globus_sdk.AuthClient" title="globus_sdk.AuthClient"><code class="xref py py-class docutils literal"><span class="pre">AuthClient</span></code></a>)</dt>
+<dd><code class="docutils literal"><span class="pre">AuthClient</span></code> capable of using the <code class="docutils literal"><span class="pre">refresh_token</span></code></dd>
+<dt><code class="docutils literal"><span class="pre">access_token</span></code> (<em>string</em>)</dt>
+<dd>Initial Access Token to use, only used if <code class="docutils literal"><span class="pre">expires_at</span></code> is also set</dd>
+<dt><code class="docutils literal"><span class="pre">expires_at</span></code> (<em>int</em>)</dt>
+<dd>Expiration time for the starting <code class="docutils literal"><span class="pre">access_token</span></code> expressed as a
+POSIX timestamp (i.e. seconds since the epoch)</dd>
+</dl>
+<p><code class="docutils literal"><span class="pre">on_refresh</span></code> (<em>callable</em>)
+Will be called as fn(TokenResponse) any time this authorizer
+fetches a new access_token</p>
+</div></blockquote>
+<dl class="method">
+<dt id="globus_sdk.RefreshTokenAuthorizer.set_authorization_header">
+<code class="descname">set_authorization_header</code><span class="sig-paren">(</span><em>header_dict</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/globus_sdk/authorizers/refresh_token.html#RefreshTokenAuthorizer.set_authorization_header"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#globus_sdk.RefreshTokenAuthorizer.set_authorization_header" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks to see if a new access token is needed.
+Once that&#8217;s done, sets the <code class="docutils literal"><span class="pre">Authorization</span></code> header to
+&#8220;Bearer &lt;access_token&gt;&#8221;</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="globus_sdk.RefreshTokenAuthorizer.handle_missing_authorization">
+<code class="descname">handle_missing_authorization</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/globus_sdk/authorizers/refresh_token.html#RefreshTokenAuthorizer.handle_missing_authorization"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#globus_sdk.RefreshTokenAuthorizer.handle_missing_authorization" title="Permalink to this definition">¶</a></dt>
+<dd><p>The refresh token handler can respond to a service 401 by immediately
+invalidating its current Access Token. When this happens, the next call
+to <code class="docutils literal"><span class="pre">set_authorization_header()</span></code> will result in a new Access Token
+being fetched.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">API Authorization</a><ul>
+<li><a class="reference internal" href="#the-authorizer-interface">The Authorizer Interface</a></li>
+<li><a class="reference internal" href="#authorizer-types">Authorizer Types</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="oauth/resource_servers.html"
+                        title="previous chapter">Resouce Servers and Scopes</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="config.html"
+                        title="next chapter">Globus SDK Configuration</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/authorization.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="config.html" title="Globus SDK Configuration"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="oauth/resource_servers.html" title="Resouce Servers and Scopes"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">globus-sdk-python 0.5.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2016, Globus.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.1.
+    </div>
+  </body>
+</html>

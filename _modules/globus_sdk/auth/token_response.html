@@ -1,0 +1,248 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>globus_sdk.auth.token_response &mdash; globus-sdk-python 0.5.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.5.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="globus-sdk-python 0.5.1 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">globus-sdk-python 0.5.1 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for globus_sdk.auth.token_response</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">requests</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="kn">from</span> <span class="nn">globus_sdk.response</span> <span class="kn">import</span> <span class="n">GlobusHTTPResponse</span>
+<span class="kn">from</span> <span class="nn">globus_sdk.exc</span> <span class="kn">import</span> <span class="n">GlobusOptionalDependencyError</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_convert_token_info_dict</span><span class="p">(</span><span class="n">source_dict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Extract a set of fields into a new dict for indexing by resource server.</span>
+<span class="sd">    Allow for these fields to be `None` when absent:</span>
+<span class="sd">        - &quot;refresh_token&quot;</span>
+<span class="sd">        - &quot;token_type&quot;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">expires_in</span> <span class="o">=</span> <span class="n">source_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;expires_in&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s1">&#39;scope&#39;</span><span class="p">:</span> <span class="n">source_dict</span><span class="p">[</span><span class="s1">&#39;scope&#39;</span><span class="p">],</span>
+        <span class="s1">&#39;access_token&#39;</span><span class="p">:</span> <span class="n">source_dict</span><span class="p">[</span><span class="s1">&#39;access_token&#39;</span><span class="p">],</span>
+        <span class="s1">&#39;refresh_token&#39;</span><span class="p">:</span> <span class="n">source_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;refresh_token&#39;</span><span class="p">),</span>
+        <span class="s1">&#39;token_type&#39;</span><span class="p">:</span> <span class="n">source_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;token_type&#39;</span><span class="p">),</span>
+        <span class="s1">&#39;expires_at_seconds&#39;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">+</span> <span class="n">expires_in</span><span class="p">)</span>
+    <span class="p">}</span>
+
+
+<div class="viewcode-block" id="OAuthTokenResponse"><a class="viewcode-back" href="../../../responses.html#globus_sdk.auth.token_response.OAuthTokenResponse">[docs]</a><span class="k">class</span> <span class="nc">OAuthTokenResponse</span><span class="p">(</span><span class="n">GlobusHTTPResponse</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class for responses from the OAuth2 code for tokens exchange used in</span>
+<span class="sd">    3-legged OAuth flows.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">GlobusHTTPResponse</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="c1"># call the helper at the top level</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_by_resource_server</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">resource_server</span><span class="p">:</span> <span class="n">_convert_token_info_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)}</span>
+        <span class="c1"># call the helper on everything in &#39;other_tokens&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_by_resource_server</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span>
+            <span class="p">(</span><span class="n">unprocessed_item</span><span class="p">[</span><span class="s1">&#39;resource_server&#39;</span><span class="p">],</span>
+             <span class="n">_convert_token_info_dict</span><span class="p">(</span><span class="n">unprocessed_item</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">unprocessed_item</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">other_tokens</span><span class="p">))</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">by_resource_server</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Representation of the token response in a ``dict`` indexed by resource</span>
+<span class="sd">        server.</span>
+
+<span class="sd">        Although ``OAuthTokenResponse.data`` is still available and</span>
+<span class="sd">        valid, this representation is typically more desirable for applications</span>
+<span class="sd">        doing inspection of access tokens and refresh tokens.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_by_resource_server</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">expires_at_seconds</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        A POSIX timestamp representation of the expiration</span>
+<span class="sd">        time for the top-level token in the response.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">top_level_token</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_by_resource_server</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">resource_server</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">top_level_token</span><span class="p">[</span><span class="s1">&#39;expires_at_seconds&#39;</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">expires_in</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The ``expires_in`` value for the top-level token in the response.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expires_at_seconds</span> <span class="o">-</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">())</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">access_token</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The ``access_token`` value for the top-level token in the response.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;access_token&#39;</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">refresh_token</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The ``refresh_token`` value for the top-level token in the response.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;refresh_token&#39;</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">resource_server</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The ``resource_server`` value for the top-level token in the response.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;resource_server&#39;</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">other_tokens</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The array of tokens other than the top-level one.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;other_tokens&#39;</span><span class="p">]</span>
+
+<div class="viewcode-block" id="OAuthTokenResponse.decode_id_token"><a class="viewcode-back" href="../../../responses.html#globus_sdk.auth.token_response.OAuthTokenResponse.decode_id_token">[docs]</a>    <span class="k">def</span> <span class="nf">decode_id_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">auth_client</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        A parsed ID Token (OIDC) as a dict.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Decoding ID Token &quot;{}&quot;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;id_token&#39;</span><span class="p">]))</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">from</span> <span class="nn">jose</span> <span class="kn">import</span> <span class="n">jwt</span>
+        <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s1">&#39;OptionalDependencyError(python-jose)&#39;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">GlobusOptionalDependencyError</span><span class="p">(</span>
+                <span class="p">[</span><span class="s2">&quot;python-jose&quot;</span><span class="p">],</span>
+                <span class="s2">&quot;JWT Parsing via OAuthTokenResponse.id_token&quot;</span><span class="p">)</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Fetch JWK Data: Start&#39;</span><span class="p">)</span>
+        <span class="n">oidc_conf</span> <span class="o">=</span> <span class="n">auth_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;/.well-known/openid-configuration&#39;</span><span class="p">)</span>
+        <span class="n">jwks_uri</span> <span class="o">=</span> <span class="n">oidc_conf</span><span class="p">[</span><span class="s1">&#39;jwks_uri&#39;</span><span class="p">]</span>
+        <span class="n">jwk_data</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">jwks_uri</span><span class="p">)</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Fetch JWK Data: Complete&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">jwt</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;id_token&#39;</span><span class="p">],</span> <span class="n">jwk_data</span><span class="p">,</span>
+            <span class="n">access_token</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">access_token</span><span class="p">,</span>
+            <span class="n">audience</span><span class="o">=</span><span class="n">auth_client</span><span class="o">.</span><span class="n">client_id</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Make printing responses more convenient by only showing the</span>
+        <span class="c1"># (typically important) token info</span>
+        <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">by_resource_server</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="OAuthDependentTokenResponse"><a class="viewcode-back" href="../../../responses.html#globus_sdk.auth.token_response.OAuthDependentTokenResponse">[docs]</a><span class="k">class</span> <span class="nc">OAuthDependentTokenResponse</span><span class="p">(</span><span class="n">GlobusHTTPResponse</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class for responses from the OAuth2 code for tokens retrieved by the</span>
+<span class="sd">    OAuth2 Dependent Token Extension Grant. For more complete docs, see</span>
+<span class="sd">    :meth:`oauth2_get_dependent_tokens \</span>
+<span class="sd">    &lt;globus_sdk.ConfidentialAppAuthClient.oauth2_get_dependent_tokens&gt;`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">GlobusHTTPResponse</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="c1"># call the helper on everything in the response array</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_by_resource_server</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+            <span class="p">(</span><span class="n">unprocessed_item</span><span class="p">[</span><span class="s1">&#39;resource_server&#39;</span><span class="p">],</span>
+             <span class="n">_convert_token_info_dict</span><span class="p">(</span><span class="n">unprocessed_item</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">unprocessed_item</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">by_resource_server</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Representation of the token response in a ``dict`` indexed by resource</span>
+<span class="sd">        server.</span>
+
+<span class="sd">        Although ``OAuthDependentTokenResponse.data`` is still available and</span>
+<span class="sd">        valid, this representation is typically more desirable for applications</span>
+<span class="sd">        trying to use the resulting tokens.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_by_resource_server</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">globus-sdk-python 0.5.1 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2016, Globus.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.1.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,16 @@
+build
+_build
+MANIFEST
+dist
+*.pyc
+.tox
+globus_sdk.egg-info
+eggs/
+.eggs/
+
+# virtualenv
+.venv/
+venv/
+ENV/
+env/
+.env/

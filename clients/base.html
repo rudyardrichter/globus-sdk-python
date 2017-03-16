@@ -1,0 +1,287 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Low Level API &mdash; globus-sdk-python 0.5.1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.5.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="globus-sdk-python 0.5.1 documentation" href="../index.html" />
+    <link rel="up" title="Service Clients" href="../clients.html" />
+    <link rel="next" title="Responses" href="../responses.html" />
+    <link rel="prev" title="Auth Client" href="auth.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../responses.html" title="Responses"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="auth.html" title="Auth Client"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">globus-sdk-python 0.5.1 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../clients.html" accesskey="U">Service Clients</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="low-level-api">
+<h1>Low Level API<a class="headerlink" href="#low-level-api" title="Permalink to this headline">¶</a></h1>
+<p>All service clients support the low level interface, provided by the
+<code class="docutils literal"><span class="pre">BaseClient</span></code>.</p>
+<dl class="class">
+<dt id="globus_sdk.base.BaseClient">
+<em class="property">class </em><code class="descclassname">globus_sdk.base.</code><code class="descname">BaseClient</code><span class="sig-paren">(</span><em>service</em>, <em>environment=None</em>, <em>base_path=None</em>, <em>authorizer=None</em>, <em>app_name=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/globus_sdk/base.html#BaseClient"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#globus_sdk.base.BaseClient" title="Permalink to this definition">¶</a></dt>
+<dd><p>Simple client with error handling for Globus REST APIs. Implemented
+as a wrapper around a <code class="docutils literal"><span class="pre">requests.Session</span></code> object, with a simplified
+interface that does not directly expose anything from requests.</p>
+<p>You should <em>never</em> try to directly instantiate a <code class="docutils literal"><span class="pre">BaseClient</span></code>.</p>
+<p><strong>Parameters</strong></p>
+<blockquote>
+<div><p><code class="docutils literal"><span class="pre">authorizer</span></code> (<a class="reference internal" href="../authorization.html#globus_sdk.authorizers.base.GlobusAuthorizer" title="globus_sdk.authorizers.base.GlobusAuthorizer"><code class="xref py py-class docutils literal"><span class="pre">GlobusAuthorizer</span></code></a>)</p>
+<blockquote>
+<div>A <code class="docutils literal"><span class="pre">GlobusAuthorizer</span></code> which will generate Authorization headers</div></blockquote>
+<dl class="docutils">
+<dt><code class="docutils literal"><span class="pre">app_name</span></code> (<em>string</em>)</dt>
+<dd>Optional &#8220;nice name&#8221; for the application. Has no bearing on the
+semantics of client actions. It is just passed as part of the
+User-Agent string, and may be useful when debugging issues with the
+Globus Team</dd>
+</dl>
+</div></blockquote>
+<p>All other parameters are for internal use and should be ignored.</p>
+<dl class="method">
+<dt id="globus_sdk.base.BaseClient.set_app_name">
+<code class="descname">set_app_name</code><span class="sig-paren">(</span><em>app_name</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/globus_sdk/base.html#BaseClient.set_app_name"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#globus_sdk.base.BaseClient.set_app_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set an application name to send to Globus services as part of the User
+Agent.</p>
+<p>Application developers are encouraged to set an app name as a courtesy
+to the Globus Team, and to potentially speed resolution of issues when
+interacting with Globus Support.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="globus_sdk.base.BaseClient.get">
+<code class="descname">get</code><span class="sig-paren">(</span><em>path</em>, <em>params=None</em>, <em>headers=None</em>, <em>response_class=None</em>, <em>retry_401=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/globus_sdk/base.html#BaseClient.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#globus_sdk.base.BaseClient.get" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make a GET request to the specified path.</p>
+<p><strong>Parameters</strong></p>
+<blockquote>
+<div><dl class="docutils">
+<dt><code class="docutils literal"><span class="pre">path</span></code> (<em>string</em>)</dt>
+<dd>Path for the request, with or without leading slash</dd>
+<dt><code class="docutils literal"><span class="pre">params</span></code> (<em>dict</em>)</dt>
+<dd>Parameters to be encoded as a query string</dd>
+<dt><code class="docutils literal"><span class="pre">headers</span></code> (<em>dict</em>)</dt>
+<dd>HTTP headers to add to the request</dd>
+<dt><code class="docutils literal"><span class="pre">response_class</span></code> (<em>class</em>)</dt>
+<dd>Class for response object, overrides the client&#8217;s
+<code class="docutils literal"><span class="pre">default_response_class</span></code></dd>
+<dt><code class="docutils literal"><span class="pre">retry_401</span></code> (<em>bool</em>)</dt>
+<dd>Retry on 401 responses with fresh Authorization if
+<code class="docutils literal"><span class="pre">self.authorizer</span></code> supports it</dd>
+</dl>
+</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><a class="reference internal" href="../responses.html#globus_sdk.response.GlobusHTTPResponse" title="globus_sdk.response.GlobusHTTPResponse"><code class="xref py py-class docutils literal"><span class="pre">GlobusHTTPResponse</span></code></a> object</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="globus_sdk.base.BaseClient.post">
+<code class="descname">post</code><span class="sig-paren">(</span><em>path</em>, <em>json_body=None</em>, <em>params=None</em>, <em>headers=None</em>, <em>text_body=None</em>, <em>response_class=None</em>, <em>retry_401=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/globus_sdk/base.html#BaseClient.post"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#globus_sdk.base.BaseClient.post" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make a POST request to the specified path.</p>
+<p><strong>Parameters</strong></p>
+<blockquote>
+<div><dl class="docutils">
+<dt><code class="docutils literal"><span class="pre">path</span></code> (<em>string</em>)</dt>
+<dd>Path for the request, with or without leading slash</dd>
+<dt><code class="docutils literal"><span class="pre">params</span></code> (<em>dict</em>)</dt>
+<dd>Parameters to be encoded as a query string</dd>
+<dt><code class="docutils literal"><span class="pre">headers</span></code> (<em>dict</em>)</dt>
+<dd>HTTP headers to add to the request</dd>
+<dt><code class="docutils literal"><span class="pre">json_body</span></code> (<em>dict</em>)</dt>
+<dd>Data which will be JSON encoded as the body of the request</dd>
+<dt><code class="docutils literal"><span class="pre">text_body</span></code> (<em>string or dict</em>)</dt>
+<dd>Either a raw string that will serve as the request body, or a
+dict which will be HTTP Form encoded</dd>
+<dt><code class="docutils literal"><span class="pre">response_class</span></code> (<em>class</em>)</dt>
+<dd>Class for response object, overrides the client&#8217;s
+<code class="docutils literal"><span class="pre">default_response_class</span></code></dd>
+<dt><code class="docutils literal"><span class="pre">retry_401</span></code> (<em>bool</em>)</dt>
+<dd>Retry on 401 responses with fresh Authorization if
+<code class="docutils literal"><span class="pre">self.authorizer</span></code> supports it</dd>
+</dl>
+</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><a class="reference internal" href="../responses.html#globus_sdk.response.GlobusHTTPResponse" title="globus_sdk.response.GlobusHTTPResponse"><code class="xref py py-class docutils literal"><span class="pre">GlobusHTTPResponse</span></code></a> object</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="globus_sdk.base.BaseClient.delete">
+<code class="descname">delete</code><span class="sig-paren">(</span><em>path</em>, <em>params=None</em>, <em>headers=None</em>, <em>response_class=None</em>, <em>retry_401=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/globus_sdk/base.html#BaseClient.delete"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#globus_sdk.base.BaseClient.delete" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make a DELETE request to the specified path.</p>
+<p><strong>Parameters</strong></p>
+<blockquote>
+<div><dl class="docutils">
+<dt><code class="docutils literal"><span class="pre">path</span></code> (<em>string</em>)</dt>
+<dd>Path for the request, with or without leading slash</dd>
+<dt><code class="docutils literal"><span class="pre">params</span></code> (<em>dict</em>)</dt>
+<dd>Parameters to be encoded as a query string</dd>
+<dt><code class="docutils literal"><span class="pre">headers</span></code> (<em>dict</em>)</dt>
+<dd>HTTP headers to add to the request</dd>
+<dt><code class="docutils literal"><span class="pre">response_class</span></code> (<em>class</em>)</dt>
+<dd>Class for response object, overrides the client&#8217;s
+<code class="docutils literal"><span class="pre">default_response_class</span></code></dd>
+<dt><code class="docutils literal"><span class="pre">retry_401</span></code> (<em>bool</em>)</dt>
+<dd>Retry on 401 responses with fresh Authorization if
+<code class="docutils literal"><span class="pre">self.authorizer</span></code> supports it</dd>
+</dl>
+</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><a class="reference internal" href="../responses.html#globus_sdk.response.GlobusHTTPResponse" title="globus_sdk.response.GlobusHTTPResponse"><code class="xref py py-class docutils literal"><span class="pre">GlobusHTTPResponse</span></code></a> object</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="globus_sdk.base.BaseClient.put">
+<code class="descname">put</code><span class="sig-paren">(</span><em>path</em>, <em>json_body=None</em>, <em>params=None</em>, <em>headers=None</em>, <em>text_body=None</em>, <em>response_class=None</em>, <em>retry_401=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/globus_sdk/base.html#BaseClient.put"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#globus_sdk.base.BaseClient.put" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make a PUT request to the specified path.</p>
+<p><strong>Parameters</strong></p>
+<blockquote>
+<div><dl class="docutils">
+<dt><code class="docutils literal"><span class="pre">path</span></code> (<em>string</em>)</dt>
+<dd>Path for the request, with or without leading slash</dd>
+<dt><code class="docutils literal"><span class="pre">params</span></code> (<em>dict</em>)</dt>
+<dd>Parameters to be encoded as a query string</dd>
+<dt><code class="docutils literal"><span class="pre">headers</span></code> (<em>dict</em>)</dt>
+<dd>HTTP headers to add to the request</dd>
+<dt><code class="docutils literal"><span class="pre">json_body</span></code> (<em>dict</em>)</dt>
+<dd>Data which will be JSON encoded as the body of the request</dd>
+<dt><code class="docutils literal"><span class="pre">text_body</span></code> (<em>string or dict</em>)</dt>
+<dd>Either a raw string that will serve as the request body, or a
+dict which will be HTTP Form encoded</dd>
+<dt><code class="docutils literal"><span class="pre">response_class</span></code> (<em>class</em>)</dt>
+<dd>Class for response object, overrides the client&#8217;s
+<code class="docutils literal"><span class="pre">default_response_class</span></code></dd>
+<dt><code class="docutils literal"><span class="pre">retry_401</span></code> (<em>bool</em>)</dt>
+<dd>Retry on 401 responses with fresh Authorization if
+<code class="docutils literal"><span class="pre">self.authorizer</span></code> supports it</dd>
+</dl>
+</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><a class="reference internal" href="../responses.html#globus_sdk.response.GlobusHTTPResponse" title="globus_sdk.response.GlobusHTTPResponse"><code class="xref py py-class docutils literal"><span class="pre">GlobusHTTPResponse</span></code></a> object</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="auth.html"
+                        title="previous chapter">Auth Client</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="../responses.html"
+                        title="next chapter">Responses</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/clients/base.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../responses.html" title="Responses"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="auth.html" title="Auth Client"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">globus-sdk-python 0.5.1 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../clients.html" >Service Clients</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2016, Globus.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.1.
+    </div>
+  </body>
+</html>

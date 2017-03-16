@@ -1,0 +1,192 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Globus SDK for Python (Beta) &mdash; globus-sdk-python 0.5.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.5.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="globus-sdk-python 0.5.1 documentation" href="#" />
+    <link rel="next" title="Installation" href="installation.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="installation.html" title="Installation"
+             accesskey="N">next</a> |</li>
+        <li class="nav-item nav-item-0"><a href="#">globus-sdk-python 0.5.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="globus-sdk-for-python-beta">
+<h1>Globus SDK for Python (Beta)<a class="headerlink" href="#globus-sdk-for-python-beta" title="Permalink to this headline">¶</a></h1>
+<p>This SDK provides a convenient Pythonic interface to
+<a class="reference external" href="https://www.globus.org">Globus</a> REST APIs,
+including the Transfer API and the Globus Auth API. Documentation
+for the REST APIs is available at <a class="reference external" href="https://docs.globus.org">https://docs.globus.org</a>.</p>
+<p>Two interfaces are provided - a low level interface, supporting only
+<code class="docutils literal"><span class="pre">GET</span></code>, <code class="docutils literal"><span class="pre">PUT</span></code>, <code class="docutils literal"><span class="pre">POST</span></code>, and <code class="docutils literal"><span class="pre">DELETE</span></code> operations, and a high level
+interface providing helper methods for common API resources.</p>
+<p>Source code is available at <a class="reference external" href="https://github.com/globus/globus-sdk-python">https://github.com/globus/globus-sdk-python</a>.</p>
+</div>
+<div class="section" id="table-of-contents">
+<h1>Table of Contents<a class="headerlink" href="#table-of-contents" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">SDK Tutorial</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorial.html#step-1-get-a-client">Step 1: Get a Client</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial.html#step-2-get-and-save-client-id">Step 2: Get and Save Client ID</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial.html#step-3-get-some-access-tokens">Step 3: Get Some Access Tokens!</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial.html#step-4-use-your-tokens-talk-to-the-service">Step 4: Use Your Tokens, Talk to the Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial.html#advanced-tutorial">Advanced Tutorial</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="clients.html">Service Clients</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="clients/transfer.html">Transfer Client</a></li>
+<li class="toctree-l2"><a class="reference internal" href="clients/auth.html">Auth Client</a></li>
+<li class="toctree-l2"><a class="reference internal" href="clients/base.html">Low Level API</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="responses.html">Responses</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="responses.html#generic-response-classes">Generic Response Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="responses.html#module-globus_sdk.transfer.response">Transfer Response Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="responses.html#auth-response-classes">Auth Response Classes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="exceptions.html">Exceptions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="exceptions.html#error-classes">Error Classes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="oauth.html">Globus Auth / OAuth2</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="oauth/flows.html">OAuth Flows</a></li>
+<li class="toctree-l2"><a class="reference internal" href="oauth/resource_servers.html">Resouce Servers and Scopes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="authorization.html">API Authorization</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="authorization.html#the-authorizer-interface">The Authorizer Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="authorization.html#authorizer-types">Authorizer Types</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="config.html">Globus SDK Configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="config.html#config-format">Config Format</a></li>
+<li class="toctree-l2"><a class="reference internal" href="config.html#environment-variables">Environment Variables</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="deprecations.html">Deprecations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optional_dependencies.html">Optional Dependencies</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="optional_dependencies.html#oidc-id-tokens">OIDC ID Tokens</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Globus SDK Examples</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="examples/authorization.html">API Authorization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/native_app.html">Native App Login</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/client_credentials.html">Client Credentials Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/three_legged_oauth.html">Three Legged OAuth with Flask</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="license">
+<h1>License<a class="headerlink" href="#license" title="Permalink to this headline">¶</a></h1>
+<p>Copyright 2016 University of Chicago</p>
+<p>Licensed under the Apache License, Version 2.0 (the &#8220;License&#8221;);
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at</p>
+<p><a class="reference external" href="http://www.apache.org/licenses/LICENSE-2.0">http://www.apache.org/licenses/LICENSE-2.0</a></p>
+<p>Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an &#8220;AS IS&#8221; BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="#">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Globus SDK for Python (Beta)</a></li>
+<li><a class="reference internal" href="#table-of-contents">Table of Contents</a></li>
+<li><a class="reference internal" href="#license">License</a></li>
+</ul>
+
+  <h4>Next topic</h4>
+  <p class="topless"><a href="installation.html"
+                        title="next chapter">Installation</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/index.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="installation.html" title="Installation"
+             >next</a> |</li>
+        <li class="nav-item nav-item-0"><a href="#">globus-sdk-python 0.5.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2016, Globus.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.1.
+    </div>
+  </body>
+</html>
