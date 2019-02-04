@@ -34,6 +34,9 @@ class PaginatedResource(GlobusResponse, six.Iterator):
     # pages have a 'marker' attribute, which refers to the "next page" of
     # results, but which is opaque
     PAGING_STYLE_MARKER = 3
+    # pages have a 'next_token' attribute which is non null if there are
+    # more results and can be sent back to get the next page or results
+    PAGING_STYLE_TOKEN = 4
 
     # bind an object at class def time to act as a sentinel value for iteration
     # Basically grabbing something that can't be duplicated by iteration
@@ -46,6 +49,8 @@ class PaginatedResource(GlobusResponse, six.Iterator):
         client_method,
         path,
         client_kwargs,
+        # key to expect iterable data at in a response
+        iter_key="DATA",
         # paging parameters
         num_results=None,
         max_results_per_call=1000,
@@ -81,8 +86,8 @@ class PaginatedResource(GlobusResponse, six.Iterator):
           They return a JSON result with ``marker`` as a key indicating whether
           or not there are more results available
 
-        - Individual results are JSON objects inside of an array named ``DATA``
-          in the returned JSON document
+        - Individual results are JSON objects inside of an array found under
+        the ``iter_key`` in the returned JSON object
 
         Takes a TransferClient method, a selection of its arguments, a variety
         of limits on result sizes, an offest into the result set, and a
@@ -98,6 +103,13 @@ class PaginatedResource(GlobusResponse, six.Iterator):
           ``path``
             The base URI for the paged API calls being made, as would be passed
             to ``client_method``
+
+          ``client_kwargs``
+            Parameters to send to the ``client_method`` being called.
+
+          ``iter_key``
+            The name of the JSON field to expect iterable data to be found at.
+            This is ``DATA`` for the majority of Transfer API responses.
 
           ``num_results``
             The number of results requested by the user. We'll cap paged
@@ -164,6 +176,7 @@ class PaginatedResource(GlobusResponse, six.Iterator):
         self.client_path = path
         self.client_kwargs = client_kwargs
         self.client_kwargs["response_class"] = IterableTransferResponse
+        self.client_kwargs["response_kwargs"] = {"iter_key": iter_key}
 
         # convert the iterable_func method into a generator expression by
         # calling it
@@ -263,8 +276,11 @@ class PaginatedResource(GlobusResponse, six.Iterator):
             elif self.paging_style == self.PAGING_STYLE_LAST_KEY:
                 if self.next_marker:
                     self.client_kwargs["params"]["last_key"] = self.next_marker
+            elif self.paging_style == self.PAGING_STYLE_TOKEN:
+                if self.next_marker:
+                    self.client_kwargs["params"]["next_token"] = self.next_marker
             # these params work for all paging styles *except* MARKER
-            # and LAST_KEY
+            # LAST_KEY and TOKEN
             else:
                 self.client_kwargs["params"]["offset"] = self.offset
 
@@ -286,6 +302,12 @@ class PaginatedResource(GlobusResponse, six.Iterator):
                 # API docs aren't 100% clear -- looks like 0 is what we should
                 # expect, but we'll also accept null or absent to be safe
                 self.next_marker = res.get("next_marker")
+                return bool(self.next_marker)
+
+            # if the paging style is TOKEN, look at the next_token
+            if self.paging_style == self.PAGING_STYLE_TOKEN:
+                # next_token will be null if no more results
+                self.next_marker = res.get("next_token")
                 return bool(self.next_marker)
 
             # start doing the offset maths and see if we have another page to
@@ -321,6 +343,7 @@ class PaginatedResource(GlobusResponse, six.Iterator):
             # nicely, the __getitem__ for GlobusResponse will work on raw
             # dicts, so these handle well
             res = self.client_method(self.client_path, **self.client_kwargs)
+
             for item in res:
                 yield GlobusResponse(item, client=self.client_object)
                 # increment the "num results" counter

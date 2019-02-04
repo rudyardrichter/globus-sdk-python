@@ -198,7 +198,15 @@ class BaseClient(object):
     def qjoin_path(self, *parts):
         return "/" + "/".join(quote(part) for part in parts)
 
-    def get(self, path, params=None, headers=None, response_class=None, retry_401=True):
+    def get(
+        self,
+        path,
+        params=None,
+        headers=None,
+        response_class=None,
+        response_kwargs=None,
+        retry_401=True,
+    ):
         """
         Make a GET request to the specified path.
 
@@ -217,6 +225,10 @@ class BaseClient(object):
               Class for response object, overrides the client's
               ``default_response_class``
 
+            ``response_kwargs`` (*dict*)
+              Kwargs that will be passed to the response_class's __init__
+              method
+
             ``retry_401`` (*bool*)
               Retry on 401 responses with fresh Authorization if
               ``self.authorizer`` supports it
@@ -231,6 +243,7 @@ class BaseClient(object):
             params=params,
             headers=headers,
             response_class=response_class,
+            response_kwargs=response_kwargs,
             retry_401=retry_401,
         )
 
@@ -242,6 +255,7 @@ class BaseClient(object):
         headers=None,
         text_body=None,
         response_class=None,
+        response_kwargs=None,
         retry_401=True,
     ):
         """
@@ -269,6 +283,10 @@ class BaseClient(object):
               Class for response object, overrides the client's
               ``default_response_class``
 
+            ``response_kwargs`` (*dict*)
+              Kwargs that will be passed to the response_class's __init__
+              method
+
             ``retry_401`` (*bool*)
               Retry on 401 responses with fresh Authorization if
               ``self.authorizer`` supports it
@@ -285,11 +303,18 @@ class BaseClient(object):
             headers=headers,
             text_body=text_body,
             response_class=response_class,
+            response_kwargs=response_kwargs,
             retry_401=retry_401,
         )
 
     def delete(
-        self, path, params=None, headers=None, response_class=None, retry_401=True
+        self,
+        path,
+        params=None,
+        headers=None,
+        response_class=None,
+        response_kwargs=None,
+        retry_401=True,
     ):
         """
         Make a DELETE request to the specified path.
@@ -309,6 +334,10 @@ class BaseClient(object):
               Class for response object, overrides the client's
               ``default_response_class``
 
+            ``response_kwargs`` (*dict*)
+              Kwargs that will be passed to the response_class's __init__
+              method
+
             ``retry_401`` (*bool*)
               Retry on 401 responses with fresh Authorization if
               ``self.authorizer`` supports it
@@ -323,6 +352,7 @@ class BaseClient(object):
             params=params,
             headers=headers,
             response_class=response_class,
+            response_kwargs=response_kwargs,
             retry_401=retry_401,
         )
 
@@ -334,6 +364,7 @@ class BaseClient(object):
         headers=None,
         text_body=None,
         response_class=None,
+        response_kwargs=None,
         retry_401=True,
     ):
         """
@@ -361,6 +392,10 @@ class BaseClient(object):
               Class for response object, overrides the client's
               ``default_response_class``
 
+            ``response_kwargs`` (*dict*)
+              Kwargs that will be passed to the response_class's __init__
+              method
+
             ``retry_401`` (*bool*)
               Retry on 401 responses with fresh Authorization if
               ``self.authorizer`` supports it
@@ -377,6 +412,7 @@ class BaseClient(object):
             headers=headers,
             text_body=text_body,
             response_class=response_class,
+            response_kwargs=response_kwargs,
             retry_401=retry_401,
         )
 
@@ -388,6 +424,7 @@ class BaseClient(object):
         headers=None,
         text_body=None,
         response_class=None,
+        response_kwargs=None,
         retry_401=True,
     ):
         """
@@ -415,6 +452,10 @@ class BaseClient(object):
               Class for response object, overrides the client's
               ``default_response_class``
 
+            ``response_kwargs`` (*dict*)
+              Kwargs that will be passed to the response_class's __init__
+              method
+
             ``retry_401`` (*bool*)
               Retry on 401 responses with fresh Authorization if
               ``self.authorizer`` supports it
@@ -431,6 +472,7 @@ class BaseClient(object):
             headers=headers,
             text_body=text_body,
             response_class=response_class,
+            response_kwargs=response_kwargs,
             retry_401=retry_401,
         )
 
@@ -443,6 +485,7 @@ class BaseClient(object):
         json_body=None,
         text_body=None,
         response_class=None,
+        response_kwargs=None,
         retry_401=True,
     ):
         """
@@ -471,6 +514,10 @@ class BaseClient(object):
             ``response_class`` (*class*)
               Class for response object, overrides the client's
               ``default_response_class``
+
+            ``response_kwargs`` (*dict*)
+              Kwargs that will be passed to the response_class's __init__
+              method
 
             ``retry_401`` (*bool*)
               Retry on 401 responses with fresh Authorization if
@@ -543,9 +590,11 @@ class BaseClient(object):
                 "request completed with response code: {}".format(r.status_code)
             )
             if response_class is None:
-                return self.default_response_class(r, client=self)
+                return self.default_response_class(
+                    r, client=self, **(response_kwargs or {})
+                )
             else:
-                return response_class(r, client=self)
+                return response_class(r, client=self, **(response_kwargs or {}))
 
         self.logger.debug(
             "request completed with (error) response code: {}".format(r.status_code)
