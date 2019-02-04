@@ -65,6 +65,7 @@ class TransferClient(BaseClient):
     *  :py:meth:`.endpoint_get_activation_requirements`
     *  :py:meth:`.my_effective_pause_rule_list`
     *  :py:meth:`.my_shared_endpoint_list`
+    *  :py:meth:`.shared_endpoint_list`
     *  :py:meth:`.create_shared_endpoint`
     *  :py:meth:`.endpoint_server_list`
     *  :py:meth:`.get_endpoint_server`
@@ -514,7 +515,7 @@ class TransferClient(BaseClient):
         **External Documentation**
 
         See
-        `Get shared endpoint list \
+        `Get my shared endpoint list \
         <https://docs.globus.org/api/transfer/endpoint/#get_shared_endpoint_list>`_
         in the REST documentation for details.
         """
@@ -524,6 +525,35 @@ class TransferClient(BaseClient):
         )
         path = self.qjoin_path("endpoint", endpoint_id, "my_shared_endpoint_list")
         return self.get(path, params=params, response_class=IterableTransferResponse)
+
+    def shared_endpoint_list(self, endpoint_id, **params):
+        """
+        ``GET /endpoint/<endpoint_xid>/shared_endpoint_list``
+
+        :rtype: :class:`PaginatedResource
+                <globus_sdk.transfer.paging.PaginatedResource>`,
+                an iterable of :class:`GlobusResponse
+                <globus_sdk.response.GlobusResponse>`
+
+        **External Documentation**
+
+        See
+        `Get shared endpoint list \
+        <https://docs.globus.org/api/transfer/endpoint/#get_shared_endpoint_list2>`_
+        in the REST documentation for details.
+        """
+        endpoint_id = safe_stringify(endpoint_id)
+        self.logger.info(
+            "TransferClient.shared_endpoint_list({}, ...)".format(endpoint_id)
+        )
+        path = self.qjoin_path("endpoint", endpoint_id, "shared_endpoint_list")
+        return PaginatedResource(
+            self.get,
+            path,
+            {"params": params},
+            iter_key="shared_endpoints",
+            paging_style=PaginatedResource.PAGING_STYLE_TOKEN,
+        )
 
     def create_shared_endpoint(self, data):
         """
