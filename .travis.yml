@@ -3,15 +3,7 @@ dist: xenial
 language: python
 matrix:
   include:
-    - python: "2.7"
-      env: TOXENV=py,lowestdeps
-    # py2 linting build (flake8 on py2 can flag different stuff)
-    - name: "Python: 2.7 (linting)"
-      python: "2.7"
-      env: TOXENV=lint
     # test on 3.4, 3.5, 3.6
-    - python: "3.4"
-      env: TOXENV=py
     - python: "3.5"
       env: TOXENV=py
     - python: "3.6"
@@ -24,23 +16,12 @@ matrix:
       env: TOXENV=py
     - python: "3.8"
       env: TOXENV=py
-    - python: "pypy"
-      env: TOXENV=py
-    - python: "pypy3"
-      env: TOXENV=py
     - python: "nightly"
       env: TOXENV=py
     # non-Linux testing
     #   https://docs.travis-ci.com/user/languages/python/#running-python-tests-on-multiple-operating-systems
     #
     # Windows
-    - name: "py2 + windows"
-      os: windows
-      language: shell
-      env: TOXENV=py,lowestdeps,lint PATH=/c/Python27:/c/Python27/Scripts:$PATH
-      before_install:
-        - choco install python2
-        - python -m pip install --upgrade pip wheel
     - name: "py3.8 + windows"
       os: windows
       language: shell
@@ -49,11 +30,6 @@ matrix:
         - choco install python3
         - python -m pip install --upgrade pip wheel
     # macOS
-    - name: "py2 + macOS"
-      os: osx
-      osx_image: xcode10.2  # py3.7 on macOS 10.14, but we will use py2
-      language: shell
-      env: TOXENV=py2,py2-lowestdeps,py2-lint
     - name: "py3 + macOS"
       os: osx
       osx_image: xcode10.2  # py3.7 on macOS 10.14
@@ -61,8 +37,6 @@ matrix:
       env: TOXENV=py3,py3-lowestdeps,py37-lint
 
   allow_failures:
-    - python: "pypy"
-    - python: "pypy3"
     - python: "nightly"
 cache: pip
 install:

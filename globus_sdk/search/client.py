@@ -9,6 +9,7 @@ from globus_sdk.authorizers import (
     RefreshTokenAuthorizer,
 )
 from globus_sdk.base import BaseClient, merge_params, safe_stringify
+from globus_sdk.paging import HasNextPaginator, PaginatorCollection
 from globus_sdk.response import GlobusHTTPResponse
 
 logger = logging.getLogger(__name__)
@@ -56,6 +57,17 @@ class SearchClient(BaseClient):
 
     def __init__(self, authorizer=None, **kwargs):
         BaseClient.__init__(self, "search", authorizer=authorizer, **kwargs)
+        self.paginated = PaginatorCollection(
+            {
+                HasNextPaginator: {
+                    self.search: {
+                        "get_page_size": lambda x: x["count"],
+                        "max_total_results": 10000,
+                        "page_size": 100,
+                    }
+                }
+            }
+        )
 
     #
     # Index Management

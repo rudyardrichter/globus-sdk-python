@@ -100,7 +100,7 @@ class LastKeyPaginator(object):
         has_next_page = True
         while has_next_page:
             if self.last_key:
-                self.client_kwargs["params"]["last_key"] = self.last_key
+                self.client_kwargs["last_key"] = self.last_key
             current_page = self.method(*self.client_args, **self.client_kwargs)
             yield current_page
             self.last_key = current_page.get("last_key")
@@ -118,7 +118,7 @@ class MarkerPaginator(object):
         has_next_page = True
         while has_next_page:
             if self.marker:
-                self.client_kwargs["params"]["marker"] = self.last_key
+                self.client_kwargs["marker"] = self.last_key
             current_page = self.method(*self.client_args, **self.client_kwargs)
             yield current_page
             self.marker = current_page.get("next_marker")
