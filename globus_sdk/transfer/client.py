@@ -14,6 +14,7 @@ from globus_sdk.transfer.paging import PaginatedResource
 from globus_sdk.transfer.response import (
     ActivationRequirementsResponse,
     IterableTransferResponse,
+    SharedEndpointListResponse,
     TransferResponse,
 )
 
@@ -476,8 +477,7 @@ class TransferClient(BaseClient):
         return PaginatedResource(
             self.get,
             path,
-            {"params": params},
-            iter_key="shared_endpoints",
+            {"params": params, "response_class": SharedEndpointListResponse},
             paging_style=PaginatedResource.PAGING_STYLE_TOKEN,
         )
 

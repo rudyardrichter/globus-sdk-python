@@ -6,17 +6,24 @@ class IterableTransferResponse(TransferResponse):
     Response class for non-paged list oriented resources. Allows top level
     fields to be accessed normally via standard item access, and also
     provides a convenient way to iterate over the sub-item list in the
-    specified ``iter_key``:
+    ``DATA`` key:
 
     >>> print("Path:", r["path"])
-    >>> # Equivalent to: for item in r[iter_key]
+    >>> # Equivalent to: for item in r["DATA"]
     >>> for item in r:
     >>>     print(item["name"], item["type"])
     """
 
-    def __init__(self, http_response, iter_key="DATA", client=None):
-        TransferResponse.__init__(self, http_response, client=client)
-        self.iter_key = iter_key
+    iterable_data_key = "DATA"
 
     def __iter__(self):
-        return iter(self[self.iter_key])
+        return iter(self[self.iterable_data_key])
+
+
+class SharedEndpointListResponse(IterableTransferResponse):
+    """
+    A customized iterable response for the `shared_endpoint_list` API, which uses
+    the key ``shared_endpoints`` for iterable data rather than ``DATA``.
+    """
+
+    iterable_data_key = "shared_endpoints"

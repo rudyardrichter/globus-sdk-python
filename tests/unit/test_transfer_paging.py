@@ -5,7 +5,10 @@ import requests
 import six
 
 from globus_sdk.transfer.paging import PaginatedResource
-from globus_sdk.transfer.response import IterableTransferResponse
+from globus_sdk.transfer.response import (
+    IterableTransferResponse,
+    SharedEndpointListResponse,
+)
 
 N = 25
 
@@ -15,13 +18,7 @@ class PagingSimulator(object):
         self.n = n  # the number of simulated items
 
     def simulate_get(
-        self,
-        path,
-        params=None,
-        headers=None,
-        response_class=None,
-        response_kwargs=None,
-        retry_401=True,
+        self, path, params=None, headers=None, response_class=None, retry_401=True
     ):
         """
         Simulates a paginated response from a Globus API get supporting limit,
@@ -43,16 +40,10 @@ class PagingSimulator(object):
         response = requests.Response()
         response._content = six.b(json.dumps(data))
         response.headers["Content-Type"] = "application/json"
-        return IterableTransferResponse(response)
+        return (response_class or IterableTransferResponse)(response)
 
     def simulate_get_shared_endpoint_list(
-        self,
-        path,
-        params=None,
-        headers=None,
-        response_class=None,
-        response_kwargs=None,
-        retry_401=True,
+        self, path, params=None, headers=None, response_class=None, retry_401=True
     ):
         """
         Simulates a paginated response from GET shared_endpoint_list
@@ -82,7 +73,7 @@ class PagingSimulator(object):
         response = requests.Response()
         response._content = six.b(json.dumps(data))
         response.headers["Content-Type"] = "application/json"
-        return IterableTransferResponse(response, **(response_kwargs or {}))
+        return (response_class or IterableTransferResponse)(response)
 
 
 @pytest.fixture
@@ -198,9 +189,8 @@ def test_shared_endpoint_iteration(paging_simulator):
     pr_less = PaginatedResource(
         paging_simulator.simulate_get_shared_endpoint_list,
         "path",
-        {"params": {}},
+        {"params": {}, "response_class": SharedEndpointListResponse},
         paging_style=PaginatedResource.PAGING_STYLE_TOKEN,
-        iter_key="shared_endpoints",
         num_results=less_results,
     )
     # confirm results
@@ -214,9 +204,8 @@ def test_shared_endpoint_iteration(paging_simulator):
     pr_more = PaginatedResource(
         paging_simulator.simulate_get_shared_endpoint_list,
         "path",
-        {"params": {}},
+        {"params": {}, "response_class": SharedEndpointListResponse},
         paging_style=PaginatedResource.PAGING_STYLE_TOKEN,
-        iter_key="shared_endpoints",
         num_results=more_results,
     )
     # confirm results
@@ -228,9 +217,8 @@ def test_shared_endpoint_iteration(paging_simulator):
     pr_none = PaginatedResource(
         paging_simulator.simulate_get_shared_endpoint_list,
         "path",
-        {"params": {}},
+        {"params": {}, "response_class": SharedEndpointListResponse},
         paging_style=PaginatedResource.PAGING_STYLE_TOKEN,
-        iter_key="shared_endpoints",
         num_results=None,
     )
     # confirm results
