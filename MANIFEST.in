@@ -3,3 +3,4 @@ include README.rst
 include LICENSE
 include COPYING
 include globus_sdk/globus.cfg
+include globus_sdk/py.typed
