@@ -123,8 +123,29 @@ class TimerJob(PayloadWrapper):
         transfer_action_url = slash_join(
             get_service_url("actions", environment=environment), "transfer/transfer/run"
         )
-        # dict will either convert a `TransferData` object or leave us with a dict here
-        callback_body = {"body": dict(transfer_data)}
+        body = dict(transfer_data)
+        # Check, if `transfer_data` is a dict, whether it's just dictified
+        # TransferData (which we still need to convert) or actually the correct
+        # data to send to Transfer AP.
+        if (
+            isinstance(transfer_data, TransferData)
+            or body.get("DATA_TYPE") == "transfer"
+        ):
+            body["source_endpoint_id"] = body.pop("source_endpoint")
+            body["destination_endpoint_id"] = body.pop("destination_endpoint")
+            body["transfer_items"] = [
+                {
+                    "source_path": item["source_path"],
+                    "destination_path": item["destination_path"],
+                    "recursive": item["recursive"],
+                }
+                for item in body["DATA"]
+            ]
+            body.pop("DATA")
+            body.pop("DATA_TYPE")
+            body.pop("submission_id")
+            body.pop("skip_activation_check")
+        callback_body = {"body": body}
         return cls(
             transfer_action_url,
             callback_body,
